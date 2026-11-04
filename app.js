@@ -13,6 +13,7 @@ import {forecastScenario,normalizeForecastSettings} from './forecast.js';
 import {scanDNA,normalizeDNAMarkers,parseExerciseReport,DNA_GENES} from './dna.js';
 import {loadStore,saveStore,clearStore,storageMode} from './db.js';
 import {filterMeals,groupMeals,updateMealById} from './meal_history.js';
+import {summarizeActivityRings} from './fitness_activity.js';
 import {GOALS,parseTraining,normalizeState,emptyState,validateProfile,safeText,localToday,uid,setsOf,tonnage,bestE1RM,energy,summary,filterPeriod,feedback,mergeMissingDays,exerciseCatalog,restingMetabolicRate,validateCaloriePlan,normalizeMeal,dayCalorieBalance,recoveryForecast,exportBackupObject,normalizeTrainingPrefs} from './engine.js';
 const $=id=>document.getElementById(id),val=id=>$(id)?.value;
 let state=emptyState(),period=1,selectedMuscle=null,selectedRecoveryMuscle=null,pending=null,editingId=null,ignoreUnmatched=new Set(),activeRoute='dashboard',noticeTimer=null;
@@ -64,17 +65,18 @@ function route(name){if(!['dashboard','record','history','progress','nutrition',
 function save(){return saveStore(state).then(v=>{state=v;$('storage-status').textContent=storageMode()==='indexeddb'?'● IndexedDB・端末内保存':'● 代替保存（端末内）';return v}).catch(e=>{toast('保存失敗：'+e.message);throw e});}
 function viewLogs(){return filterPeriod(state.logs,period)}
 function renderFitnessOverview(){
- // Three rings are the *percentage of days logged* across the past seven calendar days.
+ // Three distinct rings show weight-training days, cardio days and meal-logging days in the past seven calendar days.
  // They never imply user-set goals or measured exercise intensity.
  const today=localToday();
  const [year,month,day]=today.split('-').map(Number);
  const anchor=new Date(year,month-1,day,12,0,0);
  const days=Array.from({length:7},(_,i)=>{const d=new Date(anchor);d.setDate(d.getDate()-(6-i));return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;});
  const training=(state.logs||[]).filter(x=>days.includes(x.date));
- const countDates=arr=>new Set((arr||[]).map(x=>x.date).filter(d=>days.includes(d))).size;
- const counts=[countDates(training),countDates(state.meals),countDates(state.vitals)];
- const ids=['fitness-train-days','fitness-food-days','fitness-health-days'];
- const circleIds=['fitness-ring-train','fitness-ring-food','fitness-ring-health'];
+ // A session with both strength exercises and cardio counts in both rings on that date.
+ const activity=summarizeActivityRings({logs:training,meals:state.meals,days});
+ const counts=[activity.strengthDays,activity.cardioDays,activity.foodDays];
+ const ids=['fitness-strength-days','fitness-cardio-days','fitness-food-days'];
+ const circleIds=['fitness-ring-strength','fitness-ring-cardio','fitness-ring-food'];
  counts.forEach((c,i)=>{
   const num=$(ids[i]);if(num)num.textContent=String(c);
   const ring=$(circleIds[i]);if(!ring)return;

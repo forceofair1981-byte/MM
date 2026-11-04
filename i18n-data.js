@@ -1,5 +1,10 @@
 // Offline UI translations. Static UI strings only; never send personal data to a translator.
 export const L10N = {
+"ウエイトトレーニング": {"en": "Weight training", "fr": "Musculation", "it": "Allenamento con pesi", "es": "Entrenamiento con pesas", "de": "Krafttraining"},
+"有酸素運動": {"en": "Cardio", "fr": "Cardio", "it": "Cardio", "es": "Ejercicio aeróbico", "de": "Ausdauertraining"},
+"ウエイト / 7日": {"en": "Weights / 7 days", "fr": "Musculation / 7 jours", "it": "Pesi / 7 giorni", "es": "Pesas / 7 días", "de": "Kraft / 7 Tage"},
+"過去7日間のウエイトトレーニング、有酸素運動、食事の記録日数を3本のリングで表示": {"en": "3 rings show days logged for weight training, cardio, and meals in the past 7 days", "fr": "3 anneaux indiquent les jours suivis pour la musculation, le cardio et les repas sur 7 jours", "it": "3 anelli mostrano i giorni registrati per pesi, cardio e pasti negli ultimi 7 giorni", "es": "3 anillos muestran los días registrados de pesas, ejercicio aeróbico y comidas en los últimos 7 días", "de": "3 Ringe zeigen die erfassten Tage für Krafttraining, Ausdauertraining und Mahlzeiten in den letzten 7 Tagen"},
+
 "今日も、自分を更新する。": {"en": "Make today count.", "fr": "Progressez, à votre rythme.", "it": "Oggi un passo avanti.", "es": "Hoy, un paso adelante.", "de": "Heute ein Stück weiter."},
 "トレーニングも、食事も、回復も。あなたのペースで。": {"en": "Training, nutrition and recovery. At your own pace.", "fr": "Entraînement, nutrition, récupération. À votre rythme.", "it": "Allenamento, alimentazione e recupero. Al tuo ritmo.", "es": "Entrenamiento, alimentación y recuperación. A tu ritmo.", "de": "Training, Ernährung und Erholung. In deinem Tempo."},
 "編集": {"en": "Edit", "fr": "Modifier", "it": "Modifica", "es": "Editar", "de": "Bearbeiten"},

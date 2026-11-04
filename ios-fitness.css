@@ -1,4 +1,4 @@
-/* Muscle Atlas Pro 3.8 — native-inspired visual system.
+/* Muscle Atlas Pro 3.8.1 — native-inspired visual system.
    Presentation only; underlying storage, calculations and data format remain unchanged. */
 :root {
   --fit-bg:#f5f6fa;
@@ -74,9 +74,9 @@ html[data-theme="light"] .page-heading p,html[data-theme="dark"] .page-heading p
 .fitness-rings-svg{display:block;width:100%;height:100%;overflow:visible;transform:rotate(-90deg)}
 .fitness-ring-track{fill:none;stroke:var(--fit-track)}
 .fitness-ring-progress{fill:none;stroke-linecap:round;transition:stroke-dashoffset .45s cubic-bezier(.2,.7,.1,1)}
-.fitness-ring-train{stroke:var(--fit-pink)}
+.fitness-ring-strength{stroke:var(--fit-pink)}
+.fitness-ring-cardio{stroke:var(--fit-blue)}
 .fitness-ring-food{stroke:var(--fit-teal)}
-.fitness-ring-health{stroke:#807af5}
 .fitness-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
 .fitness-ring-center strong{font-size:41px;font-weight:900;line-height:1;letter-spacing:-.075em;color:var(--fit-strong);font-variant-numeric:tabular-nums}
 .fitness-ring-center span{font-size:10px;font-weight:740;color:var(--fit-subtle);margin-top:5px}
@@ -85,9 +85,9 @@ html[data-theme="light"] .page-heading p,html[data-theme="dark"] .page-heading p
 .fitness-ring-legend strong{color:var(--fit-strong);font-size:18px;font-weight:860;letter-spacing:-.05em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .fitness-ring-legend small{font-size:10px;color:var(--fit-subtle);font-weight:650}
 .fitness-ring-dot{display:block;width:9px;height:9px;border-radius:50%}
-.fitness-ring-dot.train{background:var(--fit-pink)}
+.fitness-ring-dot.strength{background:var(--fit-pink)}
+.fitness-ring-dot.cardio{background:var(--fit-blue)}
 .fitness-ring-dot.food{background:var(--fit-teal)}
-.fitness-ring-dot.health{background:#807af5}
 .fitness-card-foot{font-size:10px;line-height:1.5;color:var(--fit-subtle);margin:7px 0 0;text-align:center}
 .fitness-week-icon{display:grid;place-items:center;flex:0 0 auto;width:37px;height:37px;border-radius:12px;background:rgba(96,128,250,.13);color:var(--fit-blue)}
 .fitness-week-icon svg{width:20px;height:20px}
@@ -217,4 +217,20 @@ html[data-theme="dark"] .nutrition-banner{background:linear-gradient(130deg,#172
  .fitness-ring-center strong{font-size:29px}
  .fitness-ring-center span{font-size:8px;margin-top:3px}
  .fitness-ring-legend strong{font-size:15px}
+}
+
+/* 3.8.1: the detailed weight-training label must remain readable on narrow iPhones. */
+.fitness-ring-legend .fitness-ring-label{overflow-wrap:anywhere;line-height:1.32;min-width:0}
+.fitness-ring-legend>div{align-items:center}
+@media(max-width:750px){
+ .fitness-ring-legend{min-width:111px;flex-basis:135px}
+ .fitness-ring-legend>div{grid-template-columns:9px minmax(0,1fr);align-items:start;gap:3px 6px}
+ .fitness-ring-legend strong{grid-column:2;font-size:16px}
+ .fitness-ring-row{gap:10px}
+ .fitness-ring-visual{max-width:55%;flex-basis:190px}
+}
+@media(max-width:365px){
+ .fitness-ring-legend{min-width:106px;gap:10px}
+ .fitness-ring-legend>div{font-size:10px}
+ .fitness-ring-visual{max-width:55%}
 }
