@@ -1,4 +1,4 @@
-/* Muscle Atlas Pro 3.7 — independent iPhone presentation controls.
+/* Muscle Atlas Pro 3.8 — independent iPhone presentation controls.
    Training records and IndexedDB schemas are intentionally untouched. */
 (function () {
   'use strict';

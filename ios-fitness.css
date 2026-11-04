@@ -1,0 +1,220 @@
+/* Muscle Atlas Pro 3.8 — native-inspired visual system.
+   Presentation only; underlying storage, calculations and data format remain unchanged. */
+:root {
+  --fit-bg:#f5f6fa;
+  --fit-surface:#fff;
+  --fit-strong:#162036;
+  --fit-secondary:#607087;
+  --fit-subtle:#9aa6b6;
+  --fit-border:#e7eaf1;
+  --fit-track:#f0f1f5;
+  --fit-blue:#3576f6;
+  --fit-pink:#fa477b;
+  --fit-orange:#ff945a;
+  --fit-teal:#36cdb0;
+  --fit-shadow:0 8px 32px rgba(30,47,79,.048);
+}
+html[data-theme="dark"] {
+  color-scheme:dark;
+  --fit-bg:#0a1120;
+  --fit-surface:#151f32;
+  --fit-strong:#f3f6fc;
+  --fit-secondary:#b1c0d3;
+  --fit-subtle:#8090a5;
+  --fit-border:#2a3950;
+  --fit-track:#28334a;
+  --fit-blue:#5e9eff;
+  --fit-pink:#ff618b;
+  --fit-orange:#ff9f6b;
+  --fit-teal:#43d4ba;
+  --fit-shadow:0 14px 34px rgba(0,0,0,.16);
+}
+html[data-theme="light"],html[data-theme="dark"] { background:var(--fit-bg); }
+html[data-theme="light"] body,html[data-theme="dark"] body {background:var(--fit-bg);color:var(--fit-strong)}
+html[data-theme="light"] .main,html[data-theme="dark"] .main{background:var(--fit-bg)}
+html[data-theme="light"] .panel,html[data-theme="dark"] .panel{background:var(--fit-surface);border:1px solid var(--fit-border);box-shadow:var(--fit-shadow)}
+html[data-theme="light"] .sidebar,html[data-theme="dark"] .sidebar{border-color:var(--fit-border)}
+html[data-theme="dark"] .sidebar{background:#101b2c}
+html[data-theme="light"] .sidebar-nav .navlink.active{background:#e7efff;color:#1760d6}
+html[data-theme="dark"] .sidebar-nav .navlink.active{background:#233958;color:#96bdff}
+html[data-theme="light"] .topbar h1,html[data-theme="dark"] .topbar h1{color:var(--fit-strong)}
+html[data-theme="dark"] .metric small{color:var(--fit-secondary)}
+html[data-theme="dark"] .metric span{color:var(--fit-subtle)}
+html[data-theme="dark"] .metric strong{color:var(--fit-strong)}
+html[data-theme="dark"] .panel .fine,html[data-theme="dark"] .disclaimer{color:var(--fit-subtle)}
+html[data-theme="light"] .panel .fine,html[data-theme="light"] .disclaimer{color:#6c7c90}
+html[data-theme="light"] .page-heading h2,html[data-theme="dark"] .page-heading h2{color:var(--fit-strong)}
+html[data-theme="light"] .page-heading p,html[data-theme="dark"] .page-heading p{color:var(--fit-secondary)}
+
+/* Daily greeting uses the same hierarchy as a modern iPhone activity dashboard. */
+.fitness-intro{position:relative;overflow:hidden;margin-bottom:17px;padding:23px 25px 21px;background:var(--fit-surface);border:1px solid var(--fit-border);border-radius:27px;box-shadow:var(--fit-shadow)}
+.fitness-intro:after{content:"";position:absolute;pointer-events:none;right:-65px;top:-115px;width:280px;height:240px;background:radial-gradient(circle,rgba(93,137,255,.1),transparent 72%)}
+.fitness-intro-head{display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:1}
+.fitness-intro-copy{display:flex;flex-direction:column;gap:4px}
+.fitness-date{font-size:13px;color:var(--fit-secondary);font-weight:720;letter-spacing:-.01em}
+.fitness-intro-kicker{font-size:9px;letter-spacing:.16em;font-weight:850;color:var(--fit-blue)}
+.fitness-avatar{width:46px;height:46px;display:grid;place-items:center;border-radius:16px;color:#fff;background:linear-gradient(145deg,#8388ff,#386df3 70%,#2a5ddd);box-shadow:0 7px 18px rgba(48,94,240,.24)}
+.fitness-avatar svg{width:26px;height:26px}
+.fitness-intro h2{position:relative;z-index:1;margin:16px 0 6px;color:var(--fit-strong);font-size:clamp(22px,3vw,30px);line-height:1.28;letter-spacing:-.062em;font-weight:870}
+.fitness-intro>p{position:relative;z-index:1;color:var(--fit-secondary);font-size:13px;line-height:1.6;margin:0}
+.fitness-profile-row{position:relative;z-index:1;display:flex;align-items:center;gap:8px;margin-top:20px;padding-top:15px;border-top:1px solid var(--fit-border);font-size:12px;color:var(--fit-secondary)}
+.fitness-profile-row #profile-summary{min-width:0;flex:1;overflow-wrap:anywhere}
+.fitness-live-dot{width:7px;height:7px;flex:0 0 auto;border-radius:50%;background:#2bca9d;box-shadow:0 0 0 4px rgba(43,202,157,.09)}
+.fitness-profile-link{border:0;background:none;flex:0 0 auto;display:flex;align-items:center;gap:5px;color:var(--fit-blue);font-size:12px;font-weight:800;padding:8px 2px}
+.fitness-profile-link span{font-size:20px;line-height:10px}
+
+.fitness-overview-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,.9fr);gap:14px;margin:0 0 14px}
+.fitness-activity-card,.fitness-week-card{background:var(--fit-surface);border:1px solid var(--fit-border);border-radius:26px;padding:22px;min-width:0;box-shadow:var(--fit-shadow)}
+.fitness-card-heading{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px}
+.fitness-overline{display:block;font-size:9px;font-weight:860;letter-spacing:.14em;color:var(--fit-subtle)}
+.fitness-card-heading h3,.fitness-metrics-heading h3{font-size:19px;letter-spacing:-.055em;font-weight:850;margin:5px 0 0;line-height:1.25;color:var(--fit-strong)}
+.fitness-period-pill{white-space:nowrap;font-size:11px;font-weight:760;color:var(--fit-blue);background:rgba(67,125,250,.085);padding:7px 11px;border-radius:99px}
+.fitness-ring-row{display:flex;align-items:center;justify-content:center;gap:20px;min-height:210px}
+.fitness-ring-visual{width:216px;max-width:61%;aspect-ratio:1;position:relative;flex:0 1 216px}
+.fitness-rings-svg{display:block;width:100%;height:100%;overflow:visible;transform:rotate(-90deg)}
+.fitness-ring-track{fill:none;stroke:var(--fit-track)}
+.fitness-ring-progress{fill:none;stroke-linecap:round;transition:stroke-dashoffset .45s cubic-bezier(.2,.7,.1,1)}
+.fitness-ring-train{stroke:var(--fit-pink)}
+.fitness-ring-food{stroke:var(--fit-teal)}
+.fitness-ring-health{stroke:#807af5}
+.fitness-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.fitness-ring-center strong{font-size:41px;font-weight:900;line-height:1;letter-spacing:-.075em;color:var(--fit-strong);font-variant-numeric:tabular-nums}
+.fitness-ring-center span{font-size:10px;font-weight:740;color:var(--fit-subtle);margin-top:5px}
+.fitness-ring-legend{flex:0 1 145px;min-width:100px;display:grid;gap:17px}
+.fitness-ring-legend>div{display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;gap:7px;color:var(--fit-secondary);font-size:12px}
+.fitness-ring-legend strong{color:var(--fit-strong);font-size:18px;font-weight:860;letter-spacing:-.05em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fitness-ring-legend small{font-size:10px;color:var(--fit-subtle);font-weight:650}
+.fitness-ring-dot{display:block;width:9px;height:9px;border-radius:50%}
+.fitness-ring-dot.train{background:var(--fit-pink)}
+.fitness-ring-dot.food{background:var(--fit-teal)}
+.fitness-ring-dot.health{background:#807af5}
+.fitness-card-foot{font-size:10px;line-height:1.5;color:var(--fit-subtle);margin:7px 0 0;text-align:center}
+.fitness-week-icon{display:grid;place-items:center;flex:0 0 auto;width:37px;height:37px;border-radius:12px;background:rgba(96,128,250,.13);color:var(--fit-blue)}
+.fitness-week-icon svg{width:20px;height:20px}
+.fitness-week-summary{display:flex;align-items:baseline;gap:9px;margin:17px 0 5px}
+.fitness-week-summary strong{font-size:43px;letter-spacing:-.07em;font-weight:890;line-height:1.1;color:var(--fit-strong);font-variant-numeric:tabular-nums}
+.fitness-week-summary>span{font-size:13px;font-weight:770;color:var(--fit-strong)}
+.fitness-week-summary small{display:block;font-size:10px;color:var(--fit-subtle);font-weight:600;margin-top:3px}
+.fitness-week-chart{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;height:144px;align-items:end;padding:8px 3px 0}
+.fitness-week-column{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:end;gap:9px;height:100%}
+.fitness-week-bar-track{display:flex;align-items:flex-end;justify-content:center;position:relative;width:100%;max-width:29px;height:100%;min-height:60px;background:var(--fit-track);border-radius:11px;overflow:hidden}
+.fitness-week-bar{width:100%;border-radius:10px;display:block;background:#d6ddeb;opacity:.8;transition:height .35s ease;min-height:4px}
+.fitness-week-bar.has-value{background:linear-gradient(0deg,#4b75f8,#8faafa);opacity:1}
+.fitness-week-column.today .fitness-week-bar.has-value{background:linear-gradient(0deg,#ef548a,#ff9bb2)}
+.fitness-week-column small{display:block;font-size:10px;font-weight:750;color:var(--fit-subtle);height:13px}
+.fitness-week-column.today small{color:var(--fit-blue)}
+.fitness-week-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:15px;margin-top:15px;border-top:1px solid var(--fit-border)}
+.fitness-week-bottom>span{font-size:11px;line-height:1.5;color:var(--fit-secondary)}
+.fitness-minilink{flex:0 0 auto;border:0;background:transparent;color:var(--fit-blue);font-size:11px;font-weight:820;padding:8px 1px}
+.fitness-minilink span{font-size:19px;vertical-align:-1px}
+
+.fitness-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:0 0 25px}
+.fitness-action-button{display:flex;align-items:center;gap:11px;min-height:63px;padding:11px 15px;text-align:left;border:1px solid var(--fit-border);background:var(--fit-surface);border-radius:19px;box-shadow:var(--fit-shadow);color:var(--fit-strong);font-size:13px;font-weight:820}
+.fitness-action-button:active{transform:scale(.985)}
+.fitness-action-symbol{width:36px;height:36px;display:grid;place-items:center;flex:0 0 auto;border-radius:12px;font-size:24px;font-weight:580}
+.fitness-action-symbol.action-train{color:#fff;background:linear-gradient(130deg,#ff638f,#f83876)}
+.fitness-action-symbol.action-food{font-size:24px;color:#16ab90;background:rgba(38,205,161,.14)}
+.fitness-action-chevron{margin-left:auto;color:var(--fit-subtle);font-size:22px;font-weight:400}
+.fitness-metrics-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 2px 12px}
+.fitness-metrics-heading h3{font-size:20px}
+.fitness-metrics-caption{font-size:10px;color:var(--fit-subtle);text-align:right;max-width:140px;line-height:1.5}
+.fitness-metric{position:relative;overflow:hidden;padding:20px 21px!important;border-radius:22px!important;background:var(--fit-surface)!important;border:1px solid var(--fit-border)!important;box-shadow:var(--fit-shadow)!important;min-height:149px!important}
+.fitness-metric:before{content:"";position:absolute;inset:18px auto 18px 0;width:3px;border-radius:3px;background:var(--fit-blue)}
+.fitness-metric-pink:before{background:var(--fit-pink)}
+.fitness-metric-blue:before{background:var(--fit-blue)}
+.fitness-metric-purple:before{background:#857afa}
+.fitness-metric-orange:before{background:var(--fit-orange)}
+.fitness-metric .fitness-metric-icon{position:absolute;right:16px;top:15px;display:grid;place-items:center;width:30px;height:30px;border-radius:11px;font-size:17px;font-weight:770;background:rgba(67,125,250,.09);color:var(--fit-blue)}
+.fitness-metric-pink .fitness-metric-icon{color:var(--fit-pink);background:rgba(244,86,133,.09)}
+.fitness-metric-purple .fitness-metric-icon{color:#857afa;background:rgba(133,122,250,.10)}
+.fitness-metric-orange .fitness-metric-icon{color:var(--fit-orange);background:rgba(255,150,92,.11)}
+.fitness-metric small{font-size:11px!important;font-weight:690;padding-right:28px;color:var(--fit-secondary)!important}
+.fitness-metric strong{font-size:35px!important;margin:21px 0 2px!important;color:var(--fit-strong)!important;line-height:1.1}
+.fitness-metric>span:not(.fitness-metric-icon){color:var(--fit-subtle)!important}
+
+/* Consistent native-inspired grouping across the deep detail and settings screens. */
+html[data-theme="light"] .panel,html[data-theme="dark"] .panel{border-radius:23px}
+html[data-theme="light"] .btn.primary{background:#3177f6;border-color:#3177f6;box-shadow:none}
+html[data-theme="dark"] .btn.primary{background:#468dff;border-color:#468dff;color:#fff;box-shadow:none}
+html[data-theme="light"] .btn.secondary{background:#eff4ff;color:#2668d4;border:1px solid #d9e7ff}
+html[data-theme="dark"] .btn.secondary{background:#253a58;color:#d2e6ff;border:1px solid #385273}
+html[data-theme="light"] .btn.ghost{color:#286cdb;border-color:#d6e3f4;background:#fff}
+html[data-theme="dark"] .btn.ghost{color:#9fc8ff;border-color:#3a4c65;background:#17263a}
+html[data-theme="light"] .tabs{background:#f0f2f8;border:0}
+html[data-theme="dark"] .tabs{background:#222f45;border:0}
+html[data-theme="light"] .tabs button.active{background:#fff;color:#2867d1}
+html[data-theme="dark"] .tabs button.active{background:#3b5172;color:#fff}
+html[data-theme="light"] .body-card{background:#17283d;border-color:#334e6f}
+html[data-theme="dark"] .body-card{background:#121f34;border-color:#34445b}
+html[data-theme="light"] .nutrition-banner{background:linear-gradient(130deg,#f8fbff,#f0fbf8)}
+html[data-theme="dark"] .nutrition-banner{background:linear-gradient(130deg,#172b42,#173638)}
+
+@media(max-width:950px){
+  .fitness-overview-grid{grid-template-columns:1fr}
+  .fitness-activity-card,.fitness-week-card{padding:19px}
+  .fitness-ring-row{justify-content:center}
+}
+@media(max-width:750px){
+  html[data-theme="light"] .main,html[data-theme="dark"] .main{padding-top:10px}
+  .topbar{min-height:28px!important;margin-bottom:14px!important}
+  .topbar h1{font-size:14px!important;font-weight:770!important;letter-spacing:-.02em!important;color:var(--fit-secondary)!important}
+  .topbar .connection{display:none}
+  .fitness-intro{padding:18px 19px 16px;border-radius:23px;margin-bottom:12px}
+  .fitness-date{font-size:12px}
+  .fitness-intro h2{font-size:25px;margin:12px 0 7px}
+  .fitness-intro>p{font-size:12px}
+  .fitness-intro-kicker{font-size:8px}
+  .fitness-avatar{width:42px;height:42px;border-radius:14px}
+  .fitness-profile-row{margin-top:15px;padding-top:10px;font-size:11px}
+  .fitness-overview-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+  .fitness-activity-card,.fitness-week-card{padding:17px 16px 16px;border-radius:23px}
+  .fitness-card-heading h3{font-size:19px}
+  .fitness-ring-row{gap:9px;min-height:185px;justify-content:space-around}
+  .fitness-ring-visual{flex:0 1 192px;max-width:60%}
+  .fitness-ring-legend{gap:14px;flex:0 1 123px;min-width:96px}
+  .fitness-ring-legend>div{font-size:11px;gap:5px}
+  .fitness-ring-legend strong{font-size:17px}
+  .fitness-ring-center strong{font-size:35px}
+  .fitness-ring-center span{font-size:9px}
+  .fitness-week-summary{margin-top:15px}
+  .fitness-week-chart{height:125px;gap:10px}
+  .fitness-week-bottom{margin-top:13px;padding-top:12px}
+  .fitness-actions{gap:10px;margin-bottom:24px}
+  .fitness-action-button{padding:9px 10px;gap:8px;font-size:12px;min-height:57px;border-radius:17px}
+  .fitness-action-symbol{width:32px;height:32px;font-size:20px}
+  .fitness-metrics-heading{margin-bottom:11px}
+  .fitness-metrics-heading h3{font-size:19px}
+  .metric-grid{gap:10px!important;margin-bottom:12px!important}
+  .fitness-metric{min-height:129px!important;padding:15px 14px!important;border-radius:19px!important}
+  .fitness-metric .fitness-metric-icon{right:10px;top:11px;width:27px;height:27px;font-size:15px}
+  .fitness-metric small{font-size:11px!important;padding-right:12px;max-width:125px}
+  .fitness-metric strong{font-size:29px!important;margin:20px 0 4px!important}
+  .mobile-nav{border-radius:18px 18px 0 0;padding-top:9px!important;padding-bottom:calc(8px + env(safe-area-inset-bottom))!important}
+  .mobile-nav button{min-height:54px!important;font-size:10px!important}
+  .mobile-nav button.active{color:var(--fit-blue)!important}
+  .mobile-nav .mobile-record .ios-icon{background:linear-gradient(145deg,#598aff,#3466f0)!important;box-shadow:0 5px 16px rgba(46,96,255,.30)!important}
+  .mobile-nav .mobile-record.active{color:var(--fit-blue)!important}
+  html[data-theme="dark"] .mobile-nav{background:#172239f3!important;border-top:1px solid #354660!important}
+  html[data-theme="light"] .mobile-nav{background:#fffffff5!important;border-top:1px solid #e5eaf3!important}
+  html[data-theme="dark"] .mobile-nav button{color:#97a8c3}
+  html[data-theme="light"] .mobile-nav button{color:#7d8ba1}
+}
+@media(max-width:365px){
+ .fitness-intro h2{font-size:23px}
+ .fitness-ring-row{gap:8px;min-height:165px}
+ .fitness-ring-visual{max-width:55%}
+ .fitness-ring-legend{min-width:94px;gap:10px}
+ .fitness-ring-legend>div{grid-template-columns:7px minmax(0,1fr);gap:2px 6px}
+ .fitness-ring-legend strong{grid-column:2}
+ .fitness-action-chevron{display:none}
+ .fitness-metrics-caption{font-size:9px}
+ .fitness-metric strong{font-size:27px!important}
+}
+@media(prefers-reduced-motion:reduce){.fitness-ring-progress,.fitness-week-bar{transition:none!important}}
+/* Empty-state rings must stay neutral until actual records are calculated. */
+.fitness-ring-progress{stroke-dasharray:0 1000}
+@media(max-width:365px){
+ .fitness-ring-center strong{font-size:29px}
+ .fitness-ring-center span{font-size:8px;margin-top:3px}
+ .fitness-ring-legend strong{font-size:15px}
+}

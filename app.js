@@ -63,7 +63,41 @@ function dominantPoseFromTotals(totals={},selectedId=''){
 function route(name){if(!['dashboard','record','history','progress','nutrition','vitals','settings'].includes(name))return;activeRoute=name;for(const el of document.querySelectorAll('.page'))el.classList.toggle('active',el.id==='page-'+name);for(const el of document.querySelectorAll('[data-route]')){const active=el.dataset.route===name;el.classList.toggle('active',active);if(el.closest('nav')){if(active)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');}}document.getElementById('mobile-more-trigger')?.classList.toggle('active',['progress','vitals','settings'].includes(name));document.dispatchEvent(new CustomEvent('muscleatlas:route',{detail:{name}}));$('page-title').textContent={dashboard:'ダッシュボード',record:'トレーニング記録',history:'トレーニング履歴',progress:'成長・分析',nutrition:'カロリー管理',vitals:'血圧・心拍数',settings:'設定・データ'}[name];if(name==='dashboard')renderDashboard();if(name==='history')renderHistory();if(name==='progress')renderProgress();if(name==='nutrition')renderNutrition();if(name==='vitals')renderVitals();if(name==='settings')renderSettings();window.scrollTo({top:0,behavior:'instant'});}
 function save(){return saveStore(state).then(v=>{state=v;$('storage-status').textContent=storageMode()==='indexeddb'?'● IndexedDB・端末内保存':'● 代替保存（端末内）';return v}).catch(e=>{toast('保存失敗：'+e.message);throw e});}
 function viewLogs(){return filterPeriod(state.logs,period)}
+function renderFitnessOverview(){
+ // Three rings are the *percentage of days logged* across the past seven calendar days.
+ // They never imply user-set goals or measured exercise intensity.
+ const today=localToday();
+ const [year,month,day]=today.split('-').map(Number);
+ const anchor=new Date(year,month-1,day,12,0,0);
+ const days=Array.from({length:7},(_,i)=>{const d=new Date(anchor);d.setDate(d.getDate()-(6-i));return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;});
+ const training=(state.logs||[]).filter(x=>days.includes(x.date));
+ const countDates=arr=>new Set((arr||[]).map(x=>x.date).filter(d=>days.includes(d))).size;
+ const counts=[countDates(training),countDates(state.meals),countDates(state.vitals)];
+ const ids=['fitness-train-days','fitness-food-days','fitness-health-days'];
+ const circleIds=['fitness-ring-train','fitness-ring-food','fitness-ring-health'];
+ counts.forEach((c,i)=>{
+  const num=$(ids[i]);if(num)num.textContent=String(c);
+  const ring=$(circleIds[i]);if(!ring)return;
+  const r=Number(ring.getAttribute('r')),circumference=2*Math.PI*r;
+  ring.style.strokeDasharray=String(circumference);
+  ring.style.strokeDashoffset=String(circumference*(1-c/7));
+ });
+ const count=$('fitness-record-days');if(count)count.textContent=String(counts[0]);
+ const sessions=$('fitness-week-sessions');if(sessions)sessions.textContent=String(training.length);
+ const chart=$('fitness-week-chart');
+ const weekdays={ja:['日','月','火','水','木','金','土'],en:['S','M','T','W','T','F','S'],fr:['D','L','M','M','J','V','S'],it:['D','L','M','M','G','V','S'],es:['D','L','M','X','J','V','S'],de:['S','M','D','M','D','F','S']};
+ const daysOfWeek=weekdays[getLanguage()]||weekdays.ja;
+ const volumes=days.map(d=>training.filter(x=>x.date===d).length),max=Math.max(1,...volumes);
+ if(chart){chart.innerHTML=days.map((d,i)=>{
+  const value=volumes[i],date=new Date(`${d}T12:00:00`),label=daysOfWeek[date.getDay()];
+  const height=value?Math.max(18,Math.round(value/max*100)):6;
+  return `<div class="fitness-week-column${i===6?' today':''}" title="${d} · ${value} sessions"><span class="fitness-week-bar-track"><span class="fitness-week-bar${value?' has-value':''}" style="height:${height}%"></span></span><small>${safeText(label)}</small></div>`;
+ }).join('');}
+ const todayLabel=$('fitness-date');if(todayLabel){try{todayLabel.textContent=new Intl.DateTimeFormat(getNumberLocale(),{month:'long',day:'numeric',weekday:'long'}).format(anchor);}catch(_){todayLabel.textContent=today;}}
+ const msg=$('fitness-week-comment');if(msg)msg.textContent=training.length?'積み重ねた記録が、成長の土台に。':'最初の記録をつけてみましょう';
+}
 function renderDashboard(){const logs=viewLogs(),v=summary(logs),p=state.profile;
+ renderFitnessOverview();
  $('m-sessions').textContent=v.sessions;$('m-sets').textContent=compact(v.sets);$('m-tonnage').textContent=compact(v.tonnage);$('m-energy').textContent=v.totalEnergy===null?'—':compact(v.totalEnergy)+(v.partial?'*':'');
  $('profile-summary').textContent=(p.weight||'—')+' kg · '+(p.height||'—')+' cm · '+translate(p.sex==='male'?'男性':p.sex==='female'?'女性':'中立')+' · '+translate(GOALS[p.goal]||'未設定');
  const model=p.display==='auto'?(p.sex==='none'?'neutral':p.sex):p.display;
