@@ -276,3 +276,10 @@ html[data-theme="light"] .map-detail,html[data-theme="dark"] .map-detail{backgro
 html[data-theme="light"] .map-detail strong,html[data-theme="dark"] .map-detail strong{color:var(--fit-strong)}
 html[data-theme="light"] .map-detail small,html[data-theme="dark"] .map-detail small{color:var(--fit-secondary)}
 html[data-theme="light"] .legend,html[data-theme="dark"] .legend{color:var(--fit-secondary)}
+
+/* Multi-year archives: long lists are rendered in 45-day pages. */
+.archive-more-row{display:flex;justify-content:center;padding:16px 0 4px}
+.archive-more-row [hidden]{display:none!important}
+.archive-retention{padding-top:10px;line-height:1.65}
+.history-toolbar>label:has(#history-period){min-width:130px;max-width:190px}
+@media(max-width:480px){.history-toolbar>label:has(#history-period){max-width:none;flex:1 1 100%}}

@@ -1,5 +1,10 @@
 // Offline UI translations. Static UI strings only; never send personal data to a translator.
 export const L10N = {
+"食事履歴も過去3年分以上を保持でき、保存済みの古い記録を自動削除しません。端末側の容量制限やデータ消去に備え、JSONバックアップを定期的に保存してください。": {"en": "Meal logs also support 3+ years without automatic deletion. Export JSON backups to protect against storage limits or device data loss.", "fr": "Les repas sur plus de 3 ans ne sont pas supprimés automatiquement. Exportez un fichier JSON pour éviter toute perte.", "it": "I pasti di oltre 3 anni non vengono eliminati automaticamente. Esporta backup JSON per evitarne la perdita.", "es": "Los registros de comidas de más de 3 años no se borran automáticamente. Exporta copias JSON para evitar pérdidas.", "de": "Mahlzeiten für über 3 Jahre werden nicht automatisch gelöscht. Regelmäßig JSON-Backups gegen Datenverlust exportieren."},
+"過去3年分以上の記録に対応。古いトレーニング履歴を自動削除しません。端末の紛失やSafariのデータ消去に備えて、定期的にJSONバックアップしてください。": {"en": "Supports 3+ years of workout logs without automatic deletion. Export JSON backups regularly in case your device is lost or Safari data is cleared.", "fr": "Prend en charge plus de 3 ans de séances sans suppression automatique. Exportez régulièrement des sauvegardes JSON.", "it": "Supporta oltre 3 anni di allenamenti senza cancellazione automatica. Salva regolarmente un backup JSON.", "es": "Admite más de 3 años de entrenamientos sin eliminación automática. Haz copias de seguridad JSON periódicas.", "de": "Unterstützt mehr als 3 Jahre Training ohne automatische Löschung. Regelmäßig JSON-Backups exportieren."},
+"さらに45日分を表示": {"en": "Show 45 more days", "fr": "Afficher 45 jours de plus", "it": "Mostra altri 45 giorni", "es": "Mostrar 45 días más", "de": "Weitere 45 Tage anzeigen"},
+"過去3年": {"en": "Past 3 years", "fr": "3 dernières années", "it": "Ultimi 3 anni", "es": "Últimos 3 años", "de": "Letzte 3 Jahre"},
+"過去1年": {"en": "Past year", "fr": "Dernière année", "it": "Ultimo anno", "es": "Último año", "de": "Letztes Jahr"},
 "胸": {"en": "Chest", "fr": "Pectoraux", "it": "Petto", "es": "Pecho", "de": "Brust"},
 "肩": {"en": "Shoulders", "fr": "Épaules", "it": "Spalle", "es": "Hombros", "de": "Schultern"},
 "腹筋": {"en": "Abs", "fr": "Abdominaux", "it": "Addominali", "es": "Abdominales", "de": "Bauchmuskeln"},
@@ -1616,13 +1621,6 @@ export const L10N = {
 "es": "Usa unos 70 alimentos de referencia sin conexión. Valores aproximados sin pérdidas de cocción ni diferencias de marca; pesos crudos y cocinados varían. El nombre del plato no basta. Las meriendas se acumulan. No dupliques un plato como ingredientes y como comida preparada.",
 "de": "Etwa 70 Offline-Referenzlebensmittel. Werte sind Näherungen ohne Garverluste oder Markenunterschiede; Roh- und Gargewichte weichen ab. Ein Gerichtename allein reicht nicht aus. Snacks werden addiert. Gerichte nicht zugleich als Zutaten und Fertiggericht erfassen."
 },
-"商品のパッケージ写真（補助入力）": {
-"en": "Package photo (assisted input)",
-"fr": "Photo de l’emballage (aide)",
-"it": "Foto confezione (aiuto inserimento)",
-"es": "Foto del envase (ayuda)",
-"de": "Verpackungsfoto (Eingabehilfe)"
-},
 "写真は保存しません": {
 "en": "Photos are not saved",
 "fr": "Photos non enregistrées",
@@ -1643,48 +1641,6 @@ export const L10N = {
 "it": "Prova riconoscimento sul dispositivo",
 "es": "Probar reconocimiento local",
 "de": "Texterkennung auf Gerät versuchen"
-},
-"栄養成分表示のテキスト": {
-"en": "Nutrition label text",
-"fr": "Texte de l’étiquette nutritionnelle",
-"it": "Testo etichetta nutrizionale",
-"es": "Texto de la etiqueta nutricional",
-"de": "Text des Nährwertetiketts"
-},
-"栄養表示の摂取量（100g当たり・100mL当たりの場合は必須）": {
-"en": "Consumed amount (required for per-100 g / per-100 ml labels)",
-"fr": "Quantité consommée (nécessaire si pour 100 g / 100 ml)",
-"it": "Quantità consumata (necessaria per 100 g / 100 ml)",
-"es": "Cantidad consumida (obligatoria para etiquetas por 100 g / 100 ml)",
-"de": "Verzehrte Menge (bei Angaben je 100 g / 100 ml erforderlich)"
-},
-"摂取量の単位": {
-"en": "Quantity unit",
-"fr": "Unité de quantité",
-"it": "Unità di quantità",
-"es": "Unidad de cantidad",
-"de": "Mengeneinheit"
-},
-"個・袋・食": {
-"en": "pieces / packs / servings",
-"fr": "pièces / sachets / portions",
-"it": "pezzi / confezioni / porzioni",
-"es": "unidades / paquetes / raciones",
-"de": "Stück / Packungen / Portionen"
-},
-"ラベルの数値を抽出・分量換算": {
-"en": "Extract nutrition label and adjust portions",
-"fr": "Extraire l’étiquette et ajuster la portion",
-"it": "Estrai etichetta e adatta porzione",
-"es": "Extraer etiqueta y ajustar ración",
-"de": "Nährwerte auslesen und Portion anpassen"
-},
-"画像は端末上でプレビューされます。文字認識がSafariで使用できない場合は、iPhoneの「テキスト認識表示」でコピーして貼り付けてください。自動で外部へ送信しません。": {
-"en": "Images are previewed locally. If Safari cannot recognize text, open the photo on iPhone, use Live Text and paste it here. Nothing is sent to a server.",
-"fr": "Images prévisualisées localement. Si Safari ne reconnaît pas le texte, utilisez « Texte en direct » de l’iPhone, puis collez-le ici. Aucun envoi au serveur.",
-"it": "Le immagini sono visualizzate localmente. Se Safari non riconosce il testo, usa Testo attivo su iPhone e incollalo qui. Nessun invio al server.",
-"es": "Las imágenes se previsualizan localmente. Si Safari no reconoce texto, usa Texto en vivo en iPhone y pégalo aquí. Sin envío al servidor.",
-"de": "Bilder werden lokal angezeigt. Falls Safari Text nicht erkennt, iPhone-Livetext verwenden und hier einfügen. Keine Serverübertragung."
 },
 "カロリー目標の設定": {
 "en": "Calorie target settings",
@@ -4521,12 +4477,12 @@ export const L10N = {
 "es": "Perfil, entrenamientos, peso, comidas, macros, presión, pulso, objetivos y supuestos de previsión se guardan en IndexedDB (o localStorage) del dispositivo. Borrar datos del sitio, desinstalar o perder el dispositivo puede eliminarlos. Sin sincronización automática.",
 "de": "Profil, Training, Gewicht, Mahlzeiten, Makros, Blutdruck, Puls, Ziele und Prognoseannahmen liegen in IndexedDB (bzw. localStorage) auf diesem Gerät. Löschen der Websitedaten, Deinstallation oder Geräteausfall können sie entfernen. Keine automatische Synchronisierung."
 },
-"商品パッケージや血圧計の写真は端末内でプレビューするだけで、アプリの記録やバックアップには画像自体を保存しません。端末内の文字認識が利用可能なブラウザでのみ自動読み取りを試みます。対応しないiPhoneでは写真アプリの「テキスト認識表示」でコピーした文字を貼り付けてください。認識された文字は保存操作時に確認用入力値として利用します。写真データの自動アップロードはありません。": {
-"en": "Product labels and monitor photos are previewed locally, not stored in app records or backups. Text recognition is attempted only where supported by the browser. Otherwise, copy text with iPhone Live Text and paste it. Verify extracted text before saving. Photos are not uploaded.",
-"fr": "Les photos d’emballages et de tensiomètres sont prévisualisées localement, non conservées dans le journal ni les sauvegardes. La lecture automatique dépend du navigateur. Sinon, utilisez Texte en direct sur iPhone. Vérifiez le texte avant sauvegarde. Aucun téléversement automatique.",
-"it": "Le foto di confezioni e misuratori vengono solo visualizzate sul dispositivo, non salvate nel registro o backup. La lettura testo dipende dal browser; altrimenti usa Testo attivo su iPhone. Verifica i dati prima di salvare. Nessun caricamento foto.",
-"es": "Las fotos de envases y tensiómetros se previsualizan localmente, no se guardan en registros ni copias. El reconocimiento de texto depende del navegador; de lo contrario usa Texto en vivo en iPhone. Comprueba los datos antes de guardar. No se suben fotos.",
-"de": "Fotos von Verpackungen und Messgeräten werden nur lokal angezeigt und nicht im Protokoll oder Backup gespeichert. Texterkennung hängt vom Browser ab; sonst iPhone-Livetext verwenden. Text vor dem Speichern prüfen. Fotos werden nicht hochgeladen."
+"血圧計・心拍計の写真は端末内でプレビューするだけで、アプリの記録やバックアップには画像自体を保存しません。端末内の文字認識が利用可能なブラウザでのみ自動読み取りを試みます。対応しないiPhoneでは写真アプリの「テキスト認識表示」でコピーした文字を貼り付けてください。認識された文字は保存操作時に確認用入力値として利用します。写真データの自動アップロードはありません。": {
+"en": "Blood pressure and pulse monitor photos are previewed locally but not stored in records or backups. Text recognition runs only where supported. Otherwise, use iPhone Live Text and verify the readings before saving. Photos are not uploaded.",
+"fr": "Les photos de tensiomètres et appareils de mesure du pouls sont uniquement prévisualisées, sans enregistrement. Le texte peut être reconnu selon le navigateur ; sinon utilisez Texte en direct sur iPhone. Vérifiez les valeurs. Les photos ne sont pas transmises.",
+"it": "Le foto di misuratori di pressione e frequenza cardiaca vengono solo visualizzate sul dispositivo. Il riconoscimento del testo dipende dal browser; in alternativa usa Testo attivo su iPhone. Controlla i valori. Le foto non vengono caricate.",
+"es": "Las fotos de tensiómetros y pulsómetros se muestran solo en el dispositivo. El reconocimiento de texto depende del navegador; si no funciona, usa Texto en vivo del iPhone. Comprueba los valores. No se suben fotos.",
+"de": "Fotos von Blutdruck- und Pulsmessgeräten werden nur lokal angezeigt, nicht in Aufzeichnungen oder Backups gespeichert. Texterkennung hängt vom Browser ab; alternativ iPhone-Livetext verwenden und Werte prüfen. Keine Foto-Uploads."
 },
 "ACTN3・ACE・PPARGC1Aの選択値は利用者が保存ボタンを押した場合のみ、このブラウザの記録保存領域（IndexedDB、代替時localStorage）へ保存します。検査レポートから貼り付けた文章は解析後に入力欄を消去し、元のPDF・氏名・検査番号は保存しません。遺伝子型は通常のJSONバックアップには含まれません。「DNA遺伝子型もJSONに含める」を明示的に選択したときだけ、暗号化されていないJSONファイルへ含めます。既に別途取得したバックアップの内容を、このアプリから削除することはできません。遺伝子型だけでトレーニング負荷や回復日数を自動決定することはありません。": {
 "en": "ACTN3, ACE and PPARGC1A values are stored locally only when you press Save. Pasted report text is cleared after parsing; PDFs, names and report IDs are not stored. Genotypes are excluded from normal JSON backups unless you explicitly opt in. Exported JSON is unencrypted, and the app cannot delete previously exported copies. DNA does not determine exercise load or recovery days.",

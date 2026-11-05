@@ -122,9 +122,10 @@ export const normalizeSession=(s)=>{
 };
 export const normalizeState=(data)=>{
  if(!data||typeof data!=='object'||!Array.isArray(data.logs)||typeof data.profile!=='object'||!data.profile)throw Error('バックアップの形式が正しくありません。');
- if(data.logs.length>20000)throw Error('記録件数が多すぎます。');
+ if(data.logs.length>150000)throw Error('トレーニングの記録件数が多すぎます。JSONバックアップを分割してください。');
+ if(Array.isArray(data.meals)&&data.meals.length>150000)throw Error('食事の記録件数が多すぎます。JSONバックアップを分割してください。');
  const logs=data.logs.map(normalizeSession), ids=new Set();for(const l of logs){if(ids.has(l.id))l.id=uid();ids.add(l.id)}
- const meals=Array.isArray(data.meals)?data.meals.slice(-30000).map(normalizeMeal):[];
+ const meals=Array.isArray(data.meals)?data.meals.map(normalizeMeal):[];
  const vitals=Array.isArray(data.vitals)?data.vitals.slice(-30000).map(normalizeVital):[];
  const vitalIds=new Set();for(const v of vitals){if(vitalIds.has(v.id))v.id=uid();vitalIds.add(v.id)}
  let pfcGoal;try{pfcGoal=validatePFCGoal(data.pfcGoal||pfcForPreset('balanced'))}catch{pfcGoal=pfcForPreset('balanced')}

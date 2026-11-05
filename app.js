@@ -1,7 +1,7 @@
 import {LANGUAGES,setLanguage,startTranslation,translate,formatDate,formatNumber,exerciseLabel,muscleLabel,insertionName,deletionPhrase,getLanguage,getNumberLocale} from './i18n.js';
 import {evaluateTrainingDay,LEVELS} from './evaluation.js';
 import {findPersonalFood,savePersonalFood,mergePersonalFoods,personalFoodsBackup,readPersonalFoodsBackup} from './personal_food.js';
-import {FOOD_REFERENCE,parseFoodLines,parseLabel,calculateFoodTotals,dailyPFC,validatePFCGoal,parseBPText,normalizeVital} from './wellness.js';
+import {FOOD_REFERENCE,parseFoodLines,calculateFoodTotals,dailyPFC,validatePFCGoal,parseBPText,normalizeVital} from './wellness.js';
 import {E,names} from './catalog.js';
 import {EXERCISE_GROUPS,searchExerciseDictionary,exerciseDictionaryCount} from './exercise_search.js';
 import {PFC_PRESETS,pfcForPreset,matchPfcPreset,pfcGramTargets} from './presets.js';
@@ -13,10 +13,12 @@ import {forecastScenario,normalizeForecastSettings} from './forecast.js';
 import {scanDNA,normalizeDNAMarkers,parseExerciseReport,DNA_GENES} from './dna.js';
 import {loadStore,saveStore,clearStore,storageMode} from './db.js';
 import {filterMeals,groupMeals,updateMealById} from './meal_history.js';
+import {historyCutoff} from './history_range.js';
 import {summarizeActivityRings} from './fitness_activity.js';
 import {GOALS,parseTraining,normalizeState,emptyState,validateProfile,safeText,localToday,uid,setsOf,tonnage,bestE1RM,energy,summary,filterPeriod,feedback,mergeMissingDays,exerciseCatalog,restingMetabolicRate,validateCaloriePlan,normalizeMeal,dayCalorieBalance,recoveryForecast,exportBackupObject,normalizeTrainingPrefs,RECOVERY_GROUPS} from './engine.js';
 const $=id=>document.getElementById(id),val=id=>$(id)?.value;
 let state=emptyState(),period=1,selectedMuscle=null,selectedRecoveryMuscle=null,pending=null,editingId=null,ignoreUnmatched=new Set(),activeRoute='dashboard',noticeTimer=null;
+const HISTORY_PAGE_DAYS=45;let visibleTrainingDays=HISTORY_PAGE_DAYS,visibleMealDays=HISTORY_PAGE_DAYS;
 const number=x=>Number(x)||0;
 const askConfirm=text=>window.confirm(translate(text));
 const askPrompt=text=>window.prompt(translate(text));
@@ -224,18 +226,21 @@ function editLog(id){const l=state.logs.find(x=>x.id===id);if(!l)return;resetFor
 async function deleteLog(id){const l=state.logs.find(x=>x.id===id);if(!l)return;if(!askConfirm(`${dateText(l.date)}の記録を削除しますか？\nこの操作は取り消せません。`))return;state.logs=state.logs.filter(x=>x.id!==id);await save();renderHistory();toast('記録を削除しました');}
 function renderHistory(){
  const q=(val('history-query')||'').trim().toLowerCase();
+ const cutoff=historyCutoff(val('history-period'),localToday());
  const list=$('history-list');
  const openDays=new Set([...list.querySelectorAll('details.training-day[open]')].map(el=>el.dataset.day));
  const openSessions=new Set([...list.querySelectorAll('details.training-session[open]')].map(el=>el.dataset.session));
  const logs=[...state.logs]
   .sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||''))
-  .filter(l=>!q||l.date.includes(q)||(l.exercises||[]).some(e=>(String(e.name||'')+' '+String(e.displayName||'')).toLowerCase().includes(q)));
+  .filter(l=>(!cutoff||l.date>=cutoff)&&(!q||l.date.includes(q)||(l.exercises||[]).some(e=>(String(e.name||'')+' '+String(e.displayName||'')).toLowerCase().includes(q))));
  const groups=new Map();
  for(const log of logs){if(!groups.has(log.date))groups.set(log.date,[]);groups.get(log.date).push(log)}
  $('history-count').textContent=`${logs.length}件 / ${groups.size}日`;
  $('history-expand-all').disabled=logs.length===0;
  $('history-collapse-all').disabled=logs.length===0;
- list.innerHTML=logs.length?[...groups].map(([date,sessions])=>{
+ $('history-load-more').hidden=groups.size<=visibleTrainingDays;
+ const visibleGroups=[...groups].slice(0,visibleTrainingDays);
+ list.innerHTML=logs.length?visibleGroups.map(([date,sessions])=>{
   const daySets=sessions.reduce((total,log)=>total+setsOf(log),0);
   const dayTonnage=sessions.reduce((total,log)=>total+tonnage(log),0);
   const open=q||openDays.has(date)?' open':'';
@@ -346,10 +351,11 @@ function renderMealHistory(){
  const els=['meal-history-query','meal-history-period','meal-history-type','meal-history-from','meal-history-to'];if(els.some(id=>!$(id)))return;
  const found=filterMeals(state.meals,{query:val('meal-history-query'),period:val('meal-history-period'),type:val('meal-history-type'),from:val('meal-history-from'),to:val('meal-history-to'),today:localToday()});
  const days=groupMeals(found);$('meal-history-count').textContent=`${found.length}件 / ${days.length}日`;
+ $('meal-history-load-more').hidden=days.length<=visibleMealDays;
  $('meal-history-summary').innerHTML=found.length?`<span>検索結果の合計 <b>${compact(found.reduce((a,m)=>a+m.kcal,0))} kcal</b></span><span>食事 ${found.length}件</span><span>日数 ${days.length}日</span>`:'<span>指定した条件の記録はありません。</span>';
  const previousOpen=new Set([...$('meal-history-list').querySelectorAll('details.meal-history-day[open]')].map(x=>x.dataset.mealDay));
  const isFiltering=Boolean((val('meal-history-query')||'').trim());
- $('meal-history-list').innerHTML=days.map(day=>`<details class="meal-history-day" data-meal-day="${safeText(day.date)}" ${(isFiltering||previousOpen.has(day.date))?'open':''}><summary class="meal-history-day-header"><strong>${safeText(dateText(day.date))}</strong><span>${day.entries.length}件 · ${compact(day.kcal)} kcal${day.macroComplete?` · P ${day.protein.toFixed(1)}g F ${day.fat.toFixed(1)}g C ${day.carbs.toFixed(1)}g`:' · PFC一部未入力'}</span><span class="fold-chevron" aria-hidden="true"></span></summary><div class="meal-history-day-body"><div class="meal-history-day-actions"><button type="button" class="btn ghost compact" data-meal-go-date="${safeText(day.date)}">この日の収支</button></div>${day.entries.map(m=>`<div class="meal-history-entry"><div class="meal-history-entry-head"><div><strong data-no-translate>${safeText(m.name)}</strong><small>${mealLabels[m.mealType]} · ${energyFormat(m.kcal)} kcal${m.manualOverride?' · 手動合計':''}</small></div><button type="button" class="btn secondary compact" data-edit-meal="${safeText(m.id)}">編集</button></div><details><summary>材料・栄養の記録を開く</summary><div class="meal-history-detail"><p>たんぱく質 ${m.protein??'未入力'}g ／ 脂質 ${m.fat??'未入力'}g ／ 炭水化物 ${m.carbs??'未入力'}g</p>${m.rawText?`<p class="meal-raw" data-no-translate>${safeText(m.rawText)}</p>`:''}${m.foodItems?.length?`<ul>${m.foodItems.map(i=>`<li><span data-no-translate>${safeText(i.label)}</span>${i.excluded?'（除外）':''} · ${i.nutrients?.kcal??'未計上'} kcal / P ${i.nutrients?.protein??'—'}g F ${i.nutrients?.fat??'—'}g C ${i.nutrients?.carbs??'—'}g</li>`).join('')}</ul>`:'<p>食品別明細のない手入力記録です。</p>'}${m.notes?`<p>メモ：<span data-no-translate>${safeText(m.notes)}</span></p>`:''}</div></details></div>`).join('')}</div></details>`).join('')||'<div class="empty">過去の食事記録はありません。期間・食事区分を変更して確認できます。</div>';
+ $('meal-history-list').innerHTML=days.slice(0,visibleMealDays).map(day=>`<details class="meal-history-day" data-meal-day="${safeText(day.date)}" ${(isFiltering||previousOpen.has(day.date))?'open':''}><summary class="meal-history-day-header"><strong>${safeText(dateText(day.date))}</strong><span>${day.entries.length}件 · ${compact(day.kcal)} kcal${day.macroComplete?` · P ${day.protein.toFixed(1)}g F ${day.fat.toFixed(1)}g C ${day.carbs.toFixed(1)}g`:' · PFC一部未入力'}</span><span class="fold-chevron" aria-hidden="true"></span></summary><div class="meal-history-day-body"><div class="meal-history-day-actions"><button type="button" class="btn ghost compact" data-meal-go-date="${safeText(day.date)}">この日の収支</button></div>${day.entries.map(m=>`<div class="meal-history-entry"><div class="meal-history-entry-head"><div><strong data-no-translate>${safeText(m.name)}</strong><small>${mealLabels[m.mealType]} · ${energyFormat(m.kcal)} kcal${m.manualOverride?' · 手動合計':''}</small></div><button type="button" class="btn secondary compact" data-edit-meal="${safeText(m.id)}">編集</button></div><details><summary>材料・栄養の記録を開く</summary><div class="meal-history-detail"><p>たんぱく質 ${m.protein??'未入力'}g ／ 脂質 ${m.fat??'未入力'}g ／ 炭水化物 ${m.carbs??'未入力'}g</p>${m.rawText?`<p class="meal-raw" data-no-translate>${safeText(m.rawText)}</p>`:''}${m.foodItems?.length?`<ul>${m.foodItems.map(i=>`<li><span data-no-translate>${safeText(i.label)}</span>${i.excluded?'（除外）':''} · ${i.nutrients?.kcal??'未計上'} kcal / P ${i.nutrients?.protein??'—'}g F ${i.nutrients?.fat??'—'}g C ${i.nutrients?.carbs??'—'}g</li>`).join('')}</ul>`:'<p>食品別明細のない手入力記録です。</p>'}${m.notes?`<p>メモ：<span data-no-translate>${safeText(m.notes)}</span></p>`:''}</div></details></div>`).join('')}</div></details>`).join('')||'<div class="empty">過去の食事記録はありません。期間・食事区分を変更して確認できます。</div>';
 }
 function closeMealEditor(){editingMealId=null;$('meal-edit-panel').hidden=true}
 function startMealEdit(id){
@@ -613,7 +619,7 @@ async function clearAll(){if(!askConfirm('すべての筋トレ履歴・身体�
 
 // v2.5 – daily macronutrients, ingredients, packages and cardiovascular log.
 let lastParsedFood=null;
-const previewPhotoURL={food:null,vital:null};
+let vitalPhotoURL=null;
 const eatSource={ingredients:'材料',dish:'完成品',product:'市販品'};
 function renderDailyPFC(date){
  const result=dailyPFC(state.meals,date,state.pfcGoal||{protein:30,fat:25,carbs:45});
@@ -705,21 +711,32 @@ async function saveFood(){
   $('food-lines').value='';$('food-name').value='';for(const id of ['food-kcal','food-protein','food-fat','food-carbs'])$(id).value='';lastParsedFood=null;lastParsedRaw='';$('food-preview').textContent='保存しました。次の食事・間食を続けて入力できます。';renderNutrition();renderDashboardEnergy();toast('食事を追加しました。品目別の確認値も端末内に保存しました。');
  }catch(e){toast(e.message)}
 }
-function choosePhoto(e,kind){const file=e.target.files?.[0];const target=kind==='food'?'food-photo-preview':'vital-photo-preview';if(previewPhotoURL[kind])URL.revokeObjectURL(previewPhotoURL[kind]);previewPhotoURL[kind]=null;if(!file)return;if(!file.type.startsWith('image/')){toast('画像ファイルを指定してください');return}if(file.size>12*1024*1024){toast('12MB以下の画像にしてください');return}previewPhotoURL[kind]=URL.createObjectURL(file);const image=document.createElement('img');image.src=previewPhotoURL[kind];image.alt='選択した写真の端末内プレビュー';$(target).replaceChildren(image);$(kind==='food'?'food-photo-status':'vital-photo-status').textContent='写真を選択しました。写真はアプリの保存データに含みません。OCRに対応しない端末は写真の文字をコピーして入力してください。'}
-async function tryPhotoOCR(kind){const pick=kind==='food'?'food-photo':'vital-photo',target=kind==='food'?'food-label-text':'vital-photo-text',status=kind==='food'?'food-photo-status':'vital-photo-status';if(!$(pick).files?.[0])return toast('写真を先に選択してください');if(typeof window.TextDetector!=='function'){$(status).textContent='このブラウザでは端末内OCRが利用できません。iPhoneの「写真」で画像を開き、「テキスト認識表示」でコピーして下の欄へ貼り付けてください。写真は送信しません。';return}
- try{const img=new Image();img.src=previewPhotoURL[kind];await img.decode();const results=await new window.TextDetector().detect(img);$(target).value=results.map(x=>x.rawValue).join('\n');$(status).textContent='端末内で文字を抽出しました。保存前に数値を照合してください。';}catch(e){$(status).textContent='文字認識に失敗しました。写真アプリの「テキスト認識表示」でコピーしてください。';}
+// Blood pressure monitor photo preview / OCR is independent of the removed food-package helper.
+function chooseVitalPhoto(event){
+ const file=event.target.files?.[0];
+ if(vitalPhotoURL)URL.revokeObjectURL(vitalPhotoURL);
+ vitalPhotoURL=null;
+ const preview=$('vital-photo-preview');preview.replaceChildren();
+ if(!file)return;
+ if(!file.type.startsWith('image/')){toast('画像ファイルを指定してください');return}
+ if(file.size>12*1024*1024){toast('12MB以下の画像にしてください');return}
+ vitalPhotoURL=URL.createObjectURL(file);
+ const img=document.createElement('img');img.src=vitalPhotoURL;img.alt='選択した写真の端末内プレビュー';
+ preview.appendChild(img);
+ $('vital-photo-status').textContent='写真を選択しました。写真はアプリの保存データに含みません。OCRに対応しない端末は写真の文字をコピーして入力してください。';
 }
-function applyFoodLabel(){
- const text=val('food-label-text').trim();if(!text)return toast('栄養成分表示の文字を入力してください。');
- const amt=val('food-label-amount'),unit=val('food-label-unit');
- const result=parseLabel(text,amt===''?{}:{amount:Number(amt),unit});
- const status=$('food-photo-status');status.textContent=result.warning;
- if(result.needsPortion||!result.found)return;
- $('food-mode').value='product';
- const raw='商品ラベル: '+text.replace(/[\r\n]+/g,' ').slice(0,3900);
- $('food-lines').value=raw;
- lastParsedFood={mode:'product',items:[{label:raw,recognized:result.kcal!==null,source:'label',food:null,grams:result.consumed?.unit==='g'?result.consumed.value:null,estimate:false,confidence:result.basis==='unknown'?'要確認':'高',reason:result.basis==='unknown'?'表示が何当たりの数値か確認してください。':'',warnings:result.warnings,nutrients:Object.fromEntries(['kcal','protein','fat','carbs'].map(k=>[k,result[k]])),excluded:false}],unknown:[],estimated:false};
- lastParsedRaw=raw;renderFoodReview();
+async function tryVitalPhotoOCR(){
+ if(!$('vital-photo').files?.[0]||!vitalPhotoURL)return toast('写真を先に選択してください');
+ const status=$('vital-photo-status');
+ if(typeof window.TextDetector!=='function'){
+  status.textContent='このブラウザでは端末内OCRが利用できません。iPhoneの「写真」で画像を開き、「テキスト認識表示」でコピーして下の欄へ貼り付けてください。写真は送信しません。';return;
+ }
+ try{
+  const img=new Image();img.src=vitalPhotoURL;await img.decode();
+  const results=await new window.TextDetector().detect(img);
+  $('vital-photo-text').value=results.map(x=>x.rawValue).join('\n');
+  status.textContent='端末内で文字を抽出しました。保存前に数値を照合してください。';
+ }catch(e){status.textContent='文字認識に失敗しました。写真アプリの「テキスト認識表示」でコピーしてください。';}
 }
 function applyVitalText(){const result=parseBPText(val('vital-photo-text'));for(const [k,id] of [['systolic','vital-sys'],['diastolic','vital-dia'],['pulse','vital-pulse']])if(result[k]!==null)$(id).value=result[k];$('vital-photo-status').textContent=`${result.recognized}項目を抽出しました。必ず測定器の数字と照合してから保存してください。`;}
 function renderVitals(){const sorted=[...(state.vitals||[])].sort((a,b)=>(a.date+' '+a.time).localeCompare(b.date+' '+b.time));$('vital-count').textContent=sorted.length+'件';
@@ -786,7 +803,7 @@ function bind(){$('app-language').addEventListener('change',chooseLanguage);for(
  $('preview-exercises').addEventListener('input',e=>{const t=e.target;if(!t.dataset.field||!pending)return;const g=pending.exercises[Number(t.dataset.ex)]?.groups[Number(t.dataset.group)];if(!g)return;g[t.dataset.field]=t.value===''&&(t.dataset.field==='weight'||t.dataset.field==='rir')?null:Number(t.value);});
  $('preview-exercises').addEventListener('click',e=>{let t=e.target;if(!pending)return;if(t.dataset.removeEx!==undefined){pending.exercises.splice(Number(t.dataset.removeEx),1);renderPreview()}else if(t.dataset.removeGroup!==undefined){const [i,j]=t.dataset.removeGroup.split(':').map(Number);pending.exercises[i].groups.splice(j,1);renderPreview()}else if(t.dataset.addGroup!==undefined){const e=pending.exercises[Number(t.dataset.addGroup)],last=e.groups[e.groups.length-1]||{weight:null,reps:10,sets:1,rir:null};e.groups.push({...last,sets:1});renderPreview()}});
  $('preview-unmatched').addEventListener('change',e=>{if(e.target.dataset.ignore===undefined)return;const id=Number(e.target.dataset.ignore);if(e.target.checked)ignoreUnmatched.add(id);else ignoreUnmatched.delete(id)});
- $('history-query').addEventListener('input',renderHistory);$('history-expand-all').addEventListener('click',()=>setHistoryExpanded(true));$('history-collapse-all').addEventListener('click',()=>setHistoryExpanded(false));$('history-list').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.edit)editLog(t.dataset.edit);else if(t.dataset.delete)deleteLog(t.dataset.delete)});
+ for(const id of ['history-query','history-period'])$(id).addEventListener(id==='history-query'?'input':'change',()=>{visibleTrainingDays=HISTORY_PAGE_DAYS;renderHistory()});$('history-load-more').addEventListener('click',()=>{visibleTrainingDays+=HISTORY_PAGE_DAYS;renderHistory()});$('history-expand-all').addEventListener('click',()=>setHistoryExpanded(true));$('history-collapse-all').addEventListener('click',()=>setHistoryExpanded(false));$('history-list').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.edit)editLog(t.dataset.edit);else if(t.dataset.delete)deleteLog(t.dataset.delete)});
  $('e1rm-exercise').addEventListener('change',renderProgress);$('forecast-calc').addEventListener('click',renderForecast);$('forecast-mode').addEventListener('change',renderForecast);$('forecast-exercise').addEventListener('change',renderForecast);$('forecast-save').addEventListener('click',saveForecastPlan);$('save-profile').addEventListener('click',saveProfile);$('export-json').addEventListener('click',exportJSON);$('export-csv').addEventListener('click',exportCSV);$('export-meals-csv').addEventListener('click',exportMealsCSV);$('import-json').addEventListener('change',e=>importJSON(e.target.files[0]));$('clear-data').addEventListener('click',clearAll);
  $('food-catalog-search').addEventListener('input',renderFoodCatalogSearch);
  $('food-catalog-results').addEventListener('click',e=>{const btn=e.target.closest('[data-pick-food]');if(!btn)return;const name=btn.dataset.pickFood;const inp=$('food-lines');inp.value+=(inp.value.trim()?'\n':'')+'・'+name+' 100g';lastParsedFood=null;lastParsedRaw='';$('food-preview').textContent='食品を追加しました。分量を修正し、解析を実行してください。';inp.focus()});
@@ -803,9 +820,9 @@ function bind(){$('app-language').addEventListener('change',chooseLanguage);for(
  $('import-personal-foods').addEventListener('change',e=>importPersonalFoods(e.target.files?.[0]));
  renderFoodCatalogSearch();
  $('food-mode').addEventListener('change',()=>{lastParsedFood=null;lastParsedRaw='';$('food-preview').textContent='形式を変更しました。解析を実行してください。'});
- $('food-analyze').addEventListener('click',analyzeFood);$('food-preview').addEventListener('input',editFoodRow);$('food-preview').addEventListener('change',editFoodRow);$('food-save').addEventListener('click',saveFood);$('food-photo').addEventListener('change',e=>choosePhoto(e,'food'));$('food-photo-read').addEventListener('click',()=>tryPhotoOCR('food'));$('food-label-analyze').addEventListener('click',applyFoodLabel);$('save-pfc-target').addEventListener('click',savePFCGoal);$('pfc-preset').addEventListener('change',choosePFCPreset);
- $('vital-date').value=localToday();$('vital-time').value=new Date().toTimeString().slice(0,5);$('save-vital').addEventListener('click',saveVital);$('vital-photo').addEventListener('change',e=>choosePhoto(e,'vital'));$('vital-photo-read').addEventListener('click',()=>tryPhotoOCR('vital'));$('vital-text-apply').addEventListener('click',applyVitalText);$('vital-list').addEventListener('click',e=>{const t=e.target.closest('[data-delete-vital]');if(t)deleteVital(t.dataset.deleteVital)});$('export-vitals-csv').addEventListener('click',exportVitalsCSV);
- for(const id of ['meal-history-query','meal-history-period','meal-history-type','meal-history-from','meal-history-to'])$(id).addEventListener(id==='meal-history-query'?'input':'change',renderMealHistory);
+ $('food-analyze').addEventListener('click',analyzeFood);$('food-preview').addEventListener('input',editFoodRow);$('food-preview').addEventListener('change',editFoodRow);$('food-save').addEventListener('click',saveFood);$('save-pfc-target').addEventListener('click',savePFCGoal);$('pfc-preset').addEventListener('change',choosePFCPreset);
+ $('vital-date').value=localToday();$('vital-time').value=new Date().toTimeString().slice(0,5);$('save-vital').addEventListener('click',saveVital);$('vital-photo').addEventListener('change',chooseVitalPhoto);$('vital-photo-read').addEventListener('click',tryVitalPhotoOCR);$('vital-text-apply').addEventListener('click',applyVitalText);$('vital-list').addEventListener('click',e=>{const t=e.target.closest('[data-delete-vital]');if(t)deleteVital(t.dataset.deleteVital)});$('export-vitals-csv').addEventListener('click',exportVitalsCSV);
+ for(const id of ['meal-history-query','meal-history-period','meal-history-type','meal-history-from','meal-history-to'])$(id).addEventListener(id==='meal-history-query'?'input':'change',()=>{visibleMealDays=HISTORY_PAGE_DAYS;renderMealHistory()});$('meal-history-load-more').addEventListener('click',()=>{visibleMealDays+=HISTORY_PAGE_DAYS;renderMealHistory()});
  $('meal-history-list').addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.dataset.editMeal)startMealEdit(btn.dataset.editMeal);else if(btn.dataset.mealGoDate){$('nutrition-date').value=btn.dataset.mealGoDate;renderNutrition();$('daily-meals-fold').open=true;$('page-nutrition').scrollIntoView({behavior:'smooth',block:'start'})}});
  $('meal-edit-cancel').addEventListener('click',closeMealEditor);$('meal-edit-recalc').addEventListener('click',recalculateMealEditor);$('meal-edit-save').addEventListener('click',saveMealEdit);
  $('nutr-quick-sex').addEventListener('change',async e=>{

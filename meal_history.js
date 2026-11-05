@@ -1,11 +1,9 @@
+import {historyCutoff} from './history_range.js';
 // Offline-only read/modify helpers. No network calls or persistent storage in this module.
 const TYPES=new Set(['breakfast','lunch','dinner','snack']);
 export function filterMeals(meals,{query='',type='all',period='all',today='',from='',to=''}={}){
  const needle=String(query).normalize('NFKC').toLocaleLowerCase('ja').trim();
- let cutoff='';
- if(period!=='all'&&Number.isInteger(Number(period))&&Number(period)>0&&today){
-  const d=new Date(today+'T12:00:00');d.setDate(d.getDate()-(Number(period)-1));cutoff=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
- }
+ const cutoff=historyCutoff(period,today);
  return [...meals].filter(m=>(!cutoff||m.date>=cutoff)&&(!from||m.date>=from)&&(!to||m.date<=to)&&(type==='all'||TYPES.has(type)&&m.mealType===type)&&(!needle||[m.name,m.rawText,m.notes,...(m.foodItems||[]).map(x=>x.label)].some(x=>String(x||'').normalize('NFKC').toLocaleLowerCase('ja').includes(needle)))).sort((a,b)=>b.date.localeCompare(a.date)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
 }
 export function groupMeals(meals){
