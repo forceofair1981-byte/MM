@@ -85,7 +85,7 @@ function silhouette(variant,side,pose){
  ${female?'<path class="sil-detail" d="M110 164 Q130 185 150 178 Q170 185 190 164"/>':''}
  </g>`;
 }
-export function heatColor(value,scale=1){const n=value/scale;if(!n)return '#263b52';if(n<2)return '#419de5';if(n<5)return '#50bba5';if(n<9)return '#f1b65a';return '#ef6477'}
+export function heatColor(value,scale=1){const n=value/scale;if(!n)return 'var(--map-heat-idle)';if(n<2)return 'var(--map-heat-low)';if(n<5)return 'var(--map-heat-medium)';if(n<9)return 'var(--map-heat-high)';return 'var(--map-heat-veryhigh)'}
 export function anatomySVG(side,variant,totals={},selected='',options={}){
  const front=side==='front',parts=front?FRONT:BACK,pose=normalizePose(options.pose||'balanced');
  const segments=parts.flatMap(([base,path])=>visualParts(base,path));
@@ -99,6 +99,6 @@ export function anatomySVG(side,variant,totals={},selected='',options={}){
  }).join('')).join('');
  return `<svg viewBox="-42 -10 384 636" class="muscle-svg" role="group" aria-label="${variant==='female'?'女性':variant==='male'?'男性':'中立'}モデルの${front?'前面':'後面'}筋肉マップ：${POSE_LABELS[pose]||'リラックスポーズ'}" data-pose="${pose}">
   <defs>${masks}</defs>${silhouette(variant,side,pose)}${shapes}
-  <text x="150" y="616" text-anchor="middle" font-size="11" fill="#b6d4ee">${POSE_LABELS[pose]||'リラックスポーズ'}</text>
+  <text x="150" y="616" text-anchor="middle" font-size="11" fill="var(--map-caption)">${POSE_LABELS[pose]||'リラックスポーズ'}</text>
  </svg>`;
 }

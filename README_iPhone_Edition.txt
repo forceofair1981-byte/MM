@@ -1,4 +1,4 @@
-Muscle Atlas Pro 3.8.1 — Activity Ring Split (iPhone Edition)
+Muscle Atlas Pro 3.8.2 — Activity Ring Split (iPhone Edition)
 
 新仕様：アクティビティリングは「ウエイトトレーニング」「有酸素運動」「食事」の3本。
 ・ウエイト：過去7日間にウエイト種目（exercises）が記録された日数（1日1カウント）
@@ -11,3 +11,5 @@ Muscle Atlas Pro 3.8.1 — Activity Ring Split (iPhone Edition)
 GitHub Pages: ZIPを解凍して、すべてのファイルを同じリポジトリのルートに上書きアップロードしてください。
 更新前に設定画面でJSONバックアップを取得してください。
 サイトデータ・キャッシュ・IndexedDBを手動削除しないでください。
+
+3.8.2: 五つの筋群（胸・肩・腹筋・背筋・脚）の回復期間を自動/1〜14日で個別指定可能。ヒートマップのSVG画像配色がライト/ダークに連動。

@@ -1,4 +1,4 @@
-/* Muscle Atlas Pro 3.8.1 — native-inspired visual system.
+/* Muscle Atlas Pro 3.8.2 — native-inspired visual system.
    Presentation only; underlying storage, calculations and data format remain unchanged. */
 :root {
   --fit-bg:#f5f6fa;
@@ -219,7 +219,7 @@ html[data-theme="dark"] .nutrition-banner{background:linear-gradient(130deg,#172
  .fitness-ring-legend strong{font-size:15px}
 }
 
-/* 3.8.1: the detailed weight-training label must remain readable on narrow iPhones. */
+/* 3.8.2: the detailed weight-training label must remain readable on narrow iPhones. */
 .fitness-ring-legend .fitness-ring-label{overflow-wrap:anywhere;line-height:1.32;min-width:0}
 .fitness-ring-legend>div{align-items:center}
 @media(max-width:750px){
@@ -234,3 +234,45 @@ html[data-theme="dark"] .nutrition-banner{background:linear-gradient(130deg,#172
  .fitness-ring-legend>div{font-size:10px}
  .fitness-ring-visual{max-width:55%}
 }
+
+/* 3.8.2 — five independently editable recovery-period settings. */
+.recovery-group-settings{border:1px solid var(--fit-border);border-radius:20px;padding:17px;margin:16px 0;background:var(--fit-surface);min-width:0}
+.recovery-group-settings legend{font-size:16px;font-weight:850;color:var(--fit-strong);padding:0 7px;letter-spacing:-.03em}
+.recovery-group-help{font-size:12px;line-height:1.65;color:var(--fit-secondary);margin:5px 0 14px}
+.recovery-group-help:last-child{margin:13px 0 0}
+.recovery-group-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.recovery-group-card{border:1px solid var(--fit-border);background:var(--fit-bg);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.recovery-group-identity{display:flex;align-items:center;gap:10px}
+.recovery-group-icon{flex:0 0 auto;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:rgba(62,121,239,.10);color:var(--fit-blue);font-size:24px;font-weight:800}
+.recovery-group-identity strong{display:block;font-size:14px;color:var(--fit-strong)}
+.recovery-group-identity small{display:block;font-size:10px;color:var(--fit-subtle);margin-top:2px}
+.recovery-group-card select{font-size:16px;min-height:44px;min-width:0;border:1px solid var(--fit-border);border-radius:12px;color:var(--fit-strong);background:var(--fit-surface);padding:10px 9px}
+.recovery-group-status{font-size:11px;line-height:1.7;color:var(--fit-secondary);margin:4px 0 13px}
+@media(max-width:430px){.recovery-group-grid{grid-template-columns:1fr}.recovery-group-card{flex-direction:row;align-items:center;justify-content:space-between;gap:6px}.recovery-group-card select{width:135px;flex:0 1 135px}.recovery-group-identity{min-width:0}.recovery-group-settings{padding:14px}}
+
+/* Two distinct anatomical illustrations using one accessible, interactive SVG.
+   Theme colors are live CSS variables; changing appearance needs no rerender.
+   High/low heat semantics remain consistent across day and night. */
+html[data-theme="light"]{
+ --map-skin:#e3ebf6;--map-outline:#8fa6c1;--map-detail:#b1c1d2;--map-muscle-outline:#fff;--map-caption:#5d708c;
+ --map-heat-idle:#c7d7eb;--map-heat-low:#3474d4;--map-heat-medium:#20a791;--map-heat-high:#e89e2d;--map-heat-veryhigh:#e14c69;
+ --map-recovery-ready:#3474d4;--map-recovery-caution:#d3941b;--map-recovery-warning:#dc5069;
+ --map-background:linear-gradient(160deg,#f8fbff,#eaf1fa 90%);
+}
+html[data-theme="dark"]{
+ --map-skin:#253c56;--map-outline:#6686a8;--map-detail:#516f8d;--map-muscle-outline:#0a1628;--map-caption:#b2c6e1;
+ --map-heat-idle:#314761;--map-heat-low:#5ba6ff;--map-heat-medium:#54d5b2;--map-heat-high:#ffd073;--map-heat-veryhigh:#ff728c;
+ --map-recovery-ready:#5ba6ff;--map-recovery-caution:#ffd073;--map-recovery-warning:#ff728c;
+ --map-background:linear-gradient(155deg,#17283e,#0c182b 90%);
+}
+html[data-theme="light"] .body-card,html[data-theme="dark"] .body-card{background:var(--map-background)!important;border:1px solid var(--fit-border)!important;box-shadow:inset 0 1px rgba(255,255,255,.10);border-radius:20px}
+html[data-theme="light"] .body-card>span,html[data-theme="dark"] .body-card>span{color:var(--fit-secondary)}
+html[data-theme="light"] .body-card em,html[data-theme="dark"] .body-card em{color:var(--fit-subtle)}
+html[data-theme="light"] .muscle-svg .sil,html[data-theme="dark"] .muscle-svg .sil{fill:var(--map-skin);stroke:var(--map-outline)}
+html[data-theme="light"] .muscle-svg .sil-detail,html[data-theme="dark"] .muscle-svg .sil-detail{stroke:var(--map-detail)}
+html[data-theme="light"] .muscle-svg .muscle,html[data-theme="dark"] .muscle-svg .muscle{stroke:var(--map-muscle-outline);stroke-width:2.25;transition:fill .2s ease,stroke .2s ease}
+html[data-theme="light"] .muscle-svg .muscle.selected,html[data-theme="dark"] .muscle-svg .muscle.selected,html[data-theme="light"] .muscle-svg .muscle:focus,html[data-theme="dark"] .muscle-svg .muscle:focus{stroke:var(--fit-strong);stroke-width:4.4;outline:none}
+html[data-theme="light"] .map-detail,html[data-theme="dark"] .map-detail{background:var(--fit-bg);border-color:var(--fit-border)}
+html[data-theme="light"] .map-detail strong,html[data-theme="dark"] .map-detail strong{color:var(--fit-strong)}
+html[data-theme="light"] .map-detail small,html[data-theme="dark"] .map-detail small{color:var(--fit-secondary)}
+html[data-theme="light"] .legend,html[data-theme="dark"] .legend{color:var(--fit-secondary)}

@@ -14,7 +14,7 @@ import {scanDNA,normalizeDNAMarkers,parseExerciseReport,DNA_GENES} from './dna.j
 import {loadStore,saveStore,clearStore,storageMode} from './db.js';
 import {filterMeals,groupMeals,updateMealById} from './meal_history.js';
 import {summarizeActivityRings} from './fitness_activity.js';
-import {GOALS,parseTraining,normalizeState,emptyState,validateProfile,safeText,localToday,uid,setsOf,tonnage,bestE1RM,energy,summary,filterPeriod,feedback,mergeMissingDays,exerciseCatalog,restingMetabolicRate,validateCaloriePlan,normalizeMeal,dayCalorieBalance,recoveryForecast,exportBackupObject,normalizeTrainingPrefs} from './engine.js';
+import {GOALS,parseTraining,normalizeState,emptyState,validateProfile,safeText,localToday,uid,setsOf,tonnage,bestE1RM,energy,summary,filterPeriod,feedback,mergeMissingDays,exerciseCatalog,restingMetabolicRate,validateCaloriePlan,normalizeMeal,dayCalorieBalance,recoveryForecast,exportBackupObject,normalizeTrainingPrefs,RECOVERY_GROUPS} from './engine.js';
 const $=id=>document.getElementById(id),val=id=>$(id)?.value;
 let state=emptyState(),period=1,selectedMuscle=null,selectedRecoveryMuscle=null,pending=null,editingId=null,ignoreUnmatched=new Set(),activeRoute='dashboard',noticeTimer=null;
 const number=x=>Number(x)||0;
@@ -130,17 +130,17 @@ function showMuscle(logs,totals){
 }
 function renderSuggestions(targetId,muscleId,asOf){
  const el=$(targetId);if(!muscleId){el.innerHTML='<div class="suggestion-empty">筋肉をタップすると、おすすめの種目と回復状況を表示します。</div>';el.removeAttribute('data-state');return;}
- const canonical=baseOf(muscleId),recovery=recoveryForecast(state.logs,asOf,state.profile,state.trainingPrefs?.extraRestDays||0).items[canonical];
+ const canonical=baseOf(muscleId),recovery=recoveryForecast(state.logs,asOf,state.profile,state.trainingPrefs).items[canonical];
  const model=recommendForMuscle(canonical,recovery,state.profile.goal);
  if(!model){el.textContent='選択した筋肉は登録されていません';return;}
  el.dataset.state=model.status;
  const badge=model.status==='warning'?'赤：警告':model.status==='caution'?'黄：注意':'青：記録上は可';
  el.innerHTML=`<div class="suggestion-head"><h4>${safeText(muscleLabel(muscleId)||model.name)} の種目候補</h4><span class="suggestion-tag">${badge}</span></div><p class="suggestion-desc">${safeText(model.headline)}。${safeText(model.guidance)}</p><div class="suggestion-items">${model.items.map((x,i)=>`<div class="suggestion-item"><strong>${i+1}. ${safeText(x.name)}</strong><small>${safeText(x.level)} · ${safeText(x.note)}</small></div>`).join('')}</div><p class="suggestion-prescription">${model.canTrainNormally?'目安：':'回復後の候補：'}${safeText(model.prescription)}</p><p class="fine">種目は例示です。関節痛・強い筋肉痛・体調不良がある日は無理をせず、専門家の助言を優先してください。青色も医学的な運動許可ではありません。</p>`;
 }
-const recoveryPalette={ready:'#419de5',caution:'#f1c24d',warning:'#f06473'};
+const recoveryPalette={ready:'var(--map-recovery-ready)',caution:'var(--map-recovery-caution)',warning:'var(--map-recovery-warning)'};
 function renderRecovery(){
  const asOf=val('recovery-date')||localToday();
- const f=recoveryForecast(state.logs,asOf,state.profile,state.trainingPrefs?.extraRestDays||0),p=state.profile;
+ const f=recoveryForecast(state.logs,asOf,state.profile,state.trainingPrefs),p=state.profile;
  const model=p.display==='auto'?(p.sex==='none'?'neutral':p.sex):p.display;
  const colors={},titles={},recoveryPoseTotals={};
  for(const [id,x] of Object.entries(f.items)){
@@ -150,17 +150,18 @@ function renderRecovery(){
  }
  const recoveryPose='balanced';
  for(const side of ['front','back'])$("recovery-"+side).innerHTML=anatomySVG(side,model,{},selectedRecoveryMuscle,{colors,titles,prefix:'recovery',pose:recoveryPose});
+ $('recovery-group-status').textContent=Object.entries(RECOVERY_GROUPS).map(([key,g])=>translate(g.label)+' '+(state.trainingPrefs?.groupRestDays?.[key]==null?translate('自動推定'):translate(state.trainingPrefs.groupRestDays[key]+'日'))).join('  ·  ');
  $('recovery-summary').innerHTML=[['warning','警告'],['caution','注意'],['ready','記録上は可']].map(([status,label])=>`<div class="recovery-stat"><small>${label}</small><strong style="color:${recoveryPalette[status]}">${f.counts[status]}<small>部位</small></strong></div>`).join('');
  const active=Object.values(f.items).filter(x=>x.hasRecord).sort((a,b)=>b.remainingDays-a.remainingDays||b.lastDate.localeCompare(a.lastDate)||a.name.localeCompare(b.name));
  $('recovery-list').innerHTML=active.length?active.map(x=>`<div class="recovery-entry" data-state="${x.state}"><span>${safeText(x.name)}<small>最終記録 ${safeText(x.lastDate)} ／ ${x.lastExposure}セット相当</small></span><b>${x.remainingDays?`残り約${x.remainingDays}日`:'記録上は可'}</b></div>`).join(''):'<div class="empty">この判定日までに部位別の筋トレ記録がありません。青は十分に回復した証拠ではありません。</div>';
  $('recovery-detail-muscle-select').value=selectedRecoveryMuscle||'';const x=selectedRecoveryMuscle?f.items[baseOf(selectedRecoveryMuscle)]:null;
- $('recovery-detail').innerHTML=x?`<strong>${safeText(displayNames[selectedRecoveryMuscle]||x.name)}：${x.statusLabel}</strong><small>${x.hasRecord?`最終トレーニング ${x.lastDate}／${x.lastExposure}セット相当。推定休養日数 ${x.restDays}日、判定日時点で残り約${x.remainingDays}日。`:'この部位の履歴なし。青色は回復完了の保証ではありません。'}</small>`:'<strong>筋肉をタップ</strong><small>最後のトレーニングと休養目安を表示します。</small>';
+ $('recovery-detail').innerHTML=x?`<strong>${safeText(displayNames[selectedRecoveryMuscle]||x.name)}：${x.statusLabel}</strong><small>${x.hasRecord?`最終トレーニング ${x.lastDate}／${x.lastExposure}セット相当。休養目安 ${x.restDays}日（設定値または推定値）、判定日時点で残り約${x.remainingDays}日。`:'この部位の履歴なし。青色は回復完了の保証ではありません。'}</small>`:'<strong>筋肉をタップ</strong><small>最後のトレーニングと休養目安を表示します。</small>';
  renderSuggestions('recovery-suggestions',selectedRecoveryMuscle,asOf);
 }
 function renderTomorrow(){
  const field=$('tomorrow-base-date');if(!field)return;
  const asOf=field.value||localToday();let result;
- try{result=planToday({logs:state.logs,profile:state.profile,excluded:state.excludedMuscles||[],asOf,maxExercises:5,extraRestDays:state.trainingPrefs?.extraRestDays||0});}
+ try{result=planToday({logs:state.logs,profile:state.profile,excluded:state.excludedMuscles||[],asOf,maxExercises:5,extraRestDays:state.trainingPrefs?.extraRestDays||0,groupRestDays:state.trainingPrefs?.groupRestDays});}
  catch(e){$('tomorrow-plan').textContent='基準日を確認してください：'+e.message;return;}
  $('tomorrow-target-date').textContent=result.today.replaceAll('-','/');
  const rir=state.trainingPrefs?.targetRir||2;
@@ -503,7 +504,21 @@ async function adjustRestDays(delta){
  select.value=String(next);
  await saveTrainingPrefs();
 }
-function renderSettings(){$('app-language').value=state.uiLanguage||'ja';for(const k of ['height','weight','age','sex','fat','muscle','goal','level','display'])$('p-'+k).value=state.profile[k]??'';$('evaluation-level').value=state.evaluationLevel||'normal';$('train-target-rir').value=String(state.trainingPrefs?.targetRir||2);$('train-extra-rest').value=String(state.trainingPrefs?.extraRestDays??0);renderRestStepper('saved');renderExclusions();renderDNASettings();$('storage-message').textContent='保存方式：'+storageMode()+'。トレーニング・食事は端末ごとに保存。バックアップは暗号化されません。';}
+function renderGroupRestDays(){
+ const days=state.trainingPrefs?.groupRestDays||{};
+ document.querySelectorAll('[data-recovery-group]').forEach(el=>{
+  const value=days[el.dataset.recoveryGroup];
+  el.value=value==null?'auto':String(value);
+ });
+}
+function collectGroupRestDays(){
+ const result={};
+ document.querySelectorAll('[data-recovery-group]').forEach(el=>{
+  result[el.dataset.recoveryGroup]=el.value==='auto'?null:Number(el.value);
+ });
+ return result;
+}
+function renderSettings(){$('app-language').value=state.uiLanguage||'ja';for(const k of ['height','weight','age','sex','fat','muscle','goal','level','display'])$('p-'+k).value=state.profile[k]??'';$('evaluation-level').value=state.evaluationLevel||'normal';$('train-target-rir').value=String(state.trainingPrefs?.targetRir||2);$('train-extra-rest').value=String(state.trainingPrefs?.extraRestDays??0);renderRestStepper('saved');renderGroupRestDays();renderExclusions();renderDNASettings();$('storage-message').textContent='保存方式：'+storageMode()+'。トレーニング・食事は端末ごとに保存。バックアップは暗号化されません。';}
 async function saveProfile(){const p={};for(const k of ['height','weight','age','sex','fat','muscle','goal','level','display'])p[k]=val('p-'+k);try{validateProfile(p);if(Number(state.profile.weight)!==Number(p.weight)){state.weights=state.weights||[];const d=localToday();const record={date:d,weight:Number(p.weight),savedAt:new Date().toISOString()};state.weights=state.weights.filter(x=>x.date!==d).concat(record);}state.profile=p;state.profileHistory=state.profileHistory||[];
  const effectiveDate=localToday();state.profileHistory=state.profileHistory.filter(x=>x.date!==effectiveDate).concat({date:effectiveDate,profile:{...p}});
  await save();renderDashboard();if(activeRoute==='nutrition')renderNutrition();toast('プロフィールを保存しました');}catch(e){toast(e.message)}}
@@ -511,7 +526,7 @@ function download(name,content,mime){const url=URL.createObjectURL(new Blob([con
 function exportJSON(){download('MuscleAtlasPro_Backup_'+localToday()+'.json',JSON.stringify(exportBackupObject(state,$('export-include-dna').checked),null,2),'application/json');toast($('export-include-dna').checked?'DNA遺伝子型を含むJSONを作成しました':'DNA遺伝子型を含まないJSONを作成しました');}
 async function saveTrainingPrefs(){
  const prior=state.trainingPrefs;
- const pendingPrefs=normalizeTrainingPrefs({targetRir:val('train-target-rir'),extraRestDays:val('train-extra-rest')});
+ const pendingPrefs=normalizeTrainingPrefs({targetRir:val('train-target-rir'),extraRestDays:val('train-extra-rest'),groupRestDays:collectGroupRestDays()});
  if($('rest-stepper').dataset.status==='saving')return;
  renderRestStepper('saving');
  $('save-training-preferences').disabled=true;
@@ -524,6 +539,7 @@ async function saveTrainingPrefs(){
  }catch(e){
   state.trainingPrefs=prior;
   $('train-extra-rest').value=String(prior?.extraRestDays??0);
+  renderGroupRestDays();
   renderRestStepper('failed');
   toast('設定を保存できません：'+e.message);
  }finally{$('save-training-preferences').disabled=false;}

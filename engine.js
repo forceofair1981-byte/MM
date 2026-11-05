@@ -6,15 +6,34 @@ import {DETAIL_IDS} from './detail.js';
 import {normalizeDNAMarkers,emptyDNAMarkers} from './dna.js';
 import {normalizePersonalFoods,mergePersonalFoods} from './personal_food.js';
 
-export const VERSION=15;
+export const VERSION=16;
 export const GOALS={balanced:'筋肥大＋減量',hypertrophy:'筋肥大',strength:'筋力向上',fatloss:'減量',proportion:'プロポーション改善（体型改善）'};
 export const defaultProfile=()=>({age:'30',height:'165',weight:'60',fat:'',muscle:'',sex:'none',display:'auto',goal:'balanced',level:'advanced'});
 export const defaultCaloriePlan=()=>({activityFactor:1.2,goalAdjustment:-250,exerciseCredit:0.5});
 export const EVALUATION_LEVELS={gentle:'優しい',normal:'普通',strict:'厳しい'};
 export const defaultForecastPlan=()=>({dailyIntake:'',strengthMode:'trend',strengthMonthlyPct:0,exercise:''});
-export const normalizeTrainingPrefs=v=>({targetRir:[1,2,3,4,5].includes(Number(v?.targetRir))?Number(v.targetRir):2,extraRestDays:[-3,-2,-1,0,1,2,3].includes(Number(v?.extraRestDays))?Number(v.extraRestDays):0});
+// User-set fixed calendar rest periods. A null value keeps the existing load-based estimate.
+export const RECOVERY_GROUPS={
+ chest:{label:'胸',muscles:['chest_up','chest','serratus']},
+ shoulders:{label:'肩',muscles:['delt_front','delt_side','delt_rear']},
+ abs:{label:'腹筋',muscles:['abs_upper','abs_lower','obliques','hip_flexor']},
+ back:{label:'背筋',muscles:['traps_upper','traps_mid','traps_lower','lats','erectors']},
+ legs:{label:'脚',muscles:['quads','adductors','tibialis','glute_med','glutes','hamstrings','gastrocnemius','soleus']}
+};
+const RECOVERY_GROUP_BY_MUSCLE=Object.fromEntries(Object.entries(RECOVERY_GROUPS).flatMap(([key,g])=>g.muscles.map(id=>[id,key])));
+export const recoveryGroupFor=id=>RECOVERY_GROUP_BY_MUSCLE[id]||null;
+export const normalizeGroupRestDays=value=>Object.fromEntries(Object.keys(RECOVERY_GROUPS).map(group=>{
+ const raw=value && typeof value==='object' && !Array.isArray(value)?value[group]:null;
+ const days=raw===null||raw===undefined||raw===''||raw==='auto'?null:Number(raw);
+ return [group,Number.isInteger(days)&&days>=1&&days<=14?days:null];
+}));
+export const normalizeTrainingPrefs=v=>({
+ targetRir:[1,2,3,4,5].includes(Number(v?.targetRir))?Number(v.targetRir):2,
+ extraRestDays:[-3,-2,-1,0,1,2,3].includes(Number(v?.extraRestDays))?Number(v.extraRestDays):0,
+ groupRestDays:normalizeGroupRestDays(v?.groupRestDays)
+});
 export const exportBackupObject=(state,includeDNAMarkers=false)=>{const {dnaMarkers:storedMarkers,...safeState}=state;return {...safeState,...(includeDNAMarkers?{dnaMarkers:normalizeDNAMarkers(storedMarkers)}:{}),profileSnapshot:{heightCm:Number(state.profile.height),weightKg:Number(state.profile.weight),ageYears:state.profile.age===''?null:Number(state.profile.age)},exportedAt:new Date().toISOString(),app:'MuscleAtlasPro'};};
-export const emptyState=()=>({schemaVersion:VERSION,profile:defaultProfile(),profileHistory:[],logs:[],weights:[],meals:[],personalFoods:[],caloriePlan:defaultCaloriePlan(),forecastPlan:defaultForecastPlan(),evaluationLevel:'normal',trainingPrefs:{targetRir:2,extraRestDays:0},dnaMarkers:emptyDNAMarkers(),excludedMuscles:[],vitals:[],pfcGoal:pfcForPreset('balanced'),pfcPreset:'balanced',uiLanguage:'ja',updatedAt:new Date().toISOString()});
+export const emptyState=()=>({schemaVersion:VERSION,profile:defaultProfile(),profileHistory:[],logs:[],weights:[],meals:[],personalFoods:[],caloriePlan:defaultCaloriePlan(),forecastPlan:defaultForecastPlan(),evaluationLevel:'normal',trainingPrefs:normalizeTrainingPrefs({}),dnaMarkers:emptyDNAMarkers(),excludedMuscles:[],vitals:[],pfcGoal:pfcForPreset('balanced'),pfcPreset:'balanced',uiLanguage:'ja',updatedAt:new Date().toISOString()});
 const alias=E.flatMap(e=>localizedExerciseAliases(e).map(a=>({e,a:a.normalize('NFKC').toLowerCase()}))).sort((a,b)=>b.a.length-a.a.length);
 // Keep the one-letter suffixes strict: 'k' must not match 'km' or 'kcal',
 // 'r' must not match 'rir', and 's' must not match arbitrary English words.
@@ -279,7 +298,7 @@ export function dayCalorieBalance(state,date){
  * intensity, and set RIR where available. No fixed waiting period establishes clinical readiness.
  * Model version recovery-cal-days-v1; see documentation for assumptions.
  */
-export const recoveryModelVersion='recovery-cal-days-v1';
+export const recoveryModelVersion='recovery-cal-days-v2-group-overrides';
 export function estimateRestDays(effectiveSets,{nearFailure=false,vigorous=false,level='intermediate'}={}){
  if(!(Number(effectiveSets)>0))return 0;
  let days= effectiveSets<=2?1:effectiveSets<=5?2:effectiveSets<=9?3:4;
@@ -289,7 +308,10 @@ export function estimateRestDays(effectiveSets,{nearFailure=false,vigorous=false
  return Math.min(5,days);
 }
 const diffCalendarDays=(a,b)=>Math.round((Date.parse(a+'T12:00:00Z')-Date.parse(b+'T12:00:00Z'))/86400000);
-export function recoveryForecast(logs,asOf=localToday(),profile={},extraRestDays=0){
+export function recoveryForecast(logs,asOf=localToday(),profile={},preferences=0){
+ const prefs=typeof preferences==='number'?normalizeTrainingPrefs({extraRestDays:preferences}):normalizeTrainingPrefs(preferences);
+ const extraRestDays=prefs.extraRestDays;
+ const groupRestDays=prefs.groupRestDays;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(asOf)||!Number.isFinite(Date.parse(asOf+'T12:00:00Z')))throw Error('回復表示日が正しくありません');
  const grouped=new Map();
  for(const log of (logs||[])){
@@ -311,7 +333,9 @@ export function recoveryForecast(logs,asOf=localToday(),profile={},extraRestDays
    const data=parts.get(id),baseDays=estimateRestDays(data.sets,{nearFailure:data.nearFailure,vigorous:data.vigorous,level:profile.level});
    // User adjustment is a subjective estimate, not a physiological clearance.
    // Keep at least one estimated calendar day for any recorded exposure.
-   const requiredDays=Math.max(1,baseDays+([-3,-2,-1,0,1,2,3].includes(Number(extraRestDays))?Number(extraRestDays):0));
+   const group=recoveryGroupFor(id);
+   const fixedDays=group?groupRestDays[group]:null;
+   const requiredDays=fixedDays===null?Math.max(1,baseDays+extraRestDays):fixedDays;
    const elapsedDays=diffCalendarDays(asOf,date);
    return {date,effectiveSets:Math.round(data.sets*10)/10,requiredDays,elapsedDays,remainingDays:Math.max(0,requiredDays-elapsedDays)};
   }).sort((a,b)=>b.date.localeCompare(a.date));

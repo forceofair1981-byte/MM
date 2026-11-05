@@ -34,11 +34,11 @@ function safeExercises(id,recovery,excluded,goal,maxPerTarget=3){
   return [...new Set([...e.p,...e.s])].every(m=>!hiddenByExclusions(m,excluded)&&recovery.items[m]?.state!=='warning');
  }).slice(0,maxPerTarget);
 }
-export function planTomorrow({logs=[],profile={},excluded=[],asOf=localToday(),maxTargets=2,maxPerTarget=3,maxTotalExercises=Infinity,extraRestDays=0}={}){
+export function planTomorrow({logs=[],profile={},excluded=[],asOf=localToday(),maxTargets=2,maxPerTarget=3,maxTotalExercises=Infinity,extraRestDays=0,groupRestDays={}}={}){
  const tomorrow=dayAfter(asOf);
  const fortnight=filterPeriod(logs,14,asOf);
  const totals=stimulus(fortnight);
- const recovery=recoveryForecast(logs,tomorrow,profile,extraRestDays);
+ const recovery=recoveryForecast(logs,tomorrow,profile,{extraRestDays,groupRestDays});
  const trainingDays=new Set(fortnight.filter(x=>setsOf(x)>0).map(x=>x.date)).size;
  const sessionCount=fortnight.length;
  const excludedUnique=[...new Set((excluded||[]).filter(id=>id in names || id.includes('_')))];
@@ -78,11 +78,11 @@ export function planTomorrow({logs=[],profile={},excluded=[],asOf=localToday(),m
 
 // Plan for the selected calendar day using the preceding 14 complete days.
 export const dayBefore=iso=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)||!Number.isFinite(Date.parse(iso+'T12:00:00Z')))throw Error('日付を確認してください');const d=new Date(iso+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10)};
-export function planToday({logs=[],profile={},excluded=[],asOf=localToday(),maxExercises=5,extraRestDays=0}={}){
+export function planToday({logs=[],profile={},excluded=[],asOf=localToday(),maxExercises=5,extraRestDays=0,groupRestDays={}}={}){
  const end=dayBefore(asOf);
- const prepared=planTomorrow({logs,profile,excluded,asOf:end,maxTargets:2,maxPerTarget:3,maxTotalExercises:Math.min(5,Math.max(1,maxExercises)),extraRestDays});
+ const prepared=planTomorrow({logs,profile,excluded,asOf:end,maxTargets:2,maxPerTarget:3,maxTotalExercises:Math.min(5,Math.max(1,maxExercises)),extraRestDays,groupRestDays});
  // Records already made today should also affect readiness. Never prescribe an already trained muscle.
- const todayRecovery=recoveryForecast(logs,asOf,profile,extraRestDays);
+ const todayRecovery=recoveryForecast(logs,asOf,profile,{extraRestDays,groupRestDays});
  const eligible=prepared.selected.map(item=>({...item,exercises:item.exercises.filter(e=>{const def=E.find(x=>x.n===e.name);return def&&[...def.p,...def.s].every(id=>todayRecovery.items[id]?.state==='ready'&&!hiddenByExclusions(id,excluded));})})).filter(x=>x.exercises.length);
  const selected=[];let remaining=Math.min(5,Math.max(1,maxExercises));
  for(const item of eligible){if(remaining<=0)break;const exercises=item.exercises.slice(0,remaining);selected.push({...item,exercises});remaining-=exercises.length;}
