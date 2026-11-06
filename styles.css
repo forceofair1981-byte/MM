@@ -296,3 +296,9 @@ html:not([lang="ja"]) .metric small{line-height:1.55;min-height:2.6em}
 .exercise-equipment-pill:focus-visible{outline:3px solid #74caff;outline-offset:2px}
 .exercise-exercises-title{margin-top:14px}
 @media(max-width:390px){.exercise-equipment-options{gap:6px}.exercise-equipment-pill{padding:9px 10px;font-size:12px}}
+
+/* v3.8.7: catalog first, free text second. Keep both modes full-width in the input grid. */
+#page-record .form-grid > .exercise-lookup {grid-column:1 / -1;min-width:0;margin:7px 0 4px}
+#page-record .form-grid > .exercise-lookup[open] {margin-bottom:8px}
+#page-record .form-grid > .exercise-lookup > summary {min-height:48px}
+#page-record .form-grid > label.full {min-width:0}

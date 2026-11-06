@@ -4655,3 +4655,7 @@ Object.assign(L10N, {
 });
 
 L10N["腹筋・体幹"]={en:"Abs & core",fr:"Abdos et tronc",it:"Addominali e core",es:"Abdominales y core",de:"Bauch & Rumpf"};
+
+// v3.8.7: labels after placing catalog entry above free-text entry.
+L10N["カタログ入力（種目リスト）"]={"en": "Catalog entry (exercise list)", "fr": "Saisie par catalogue (exercices)", "it": "Inserimento da catalogo (esercizi)", "es": "Entrada desde catálogo (ejercicios)", "de": "Katalogeingabe (Übungsliste)"};
+L10N["文字入力（自由記述）"]={"en": "Text entry (free-form)", "fr": "Saisie de texte (libre)", "it": "Inserimento testo (libero)", "es": "Entrada de texto (libre)", "de": "Texteingabe (Freitext)"};
