@@ -452,3 +452,10 @@ html[data-theme="light"] .appearance-panel .appearance-sparkle { color:#1479d8;b
  html[data-theme="light"] .sheet-arrow { color:#90a1b6; }
  html[data-theme="light"] .sheet-privacy { color:#60758c; }
 }
+
+/* v3.8.5: dictionary selections open directly in the parsed workout editor. */
+.dictionary-draft-chip{display:inline-flex;align-items:center;font-size:10px;line-height:1.4;font-weight:750;border:1px solid #477ec8;color:#a9d5ff;border-radius:99px;padding:3px 8px;margin-left:4px;vertical-align:middle}
+.review-item:has(.dictionary-draft-chip){border-color:#427ab9;scroll-margin-top:22px}
+html[data-theme="light"] .dictionary-draft-chip{background:#eaf2ff;color:#20549a;border-color:#bcd2f2}
+#preview-exercises{scroll-margin-top:20px}
+#preview-exercises input::placeholder{opacity:.8}

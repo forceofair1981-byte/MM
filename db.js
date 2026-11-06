@@ -9,7 +9,19 @@ function get(){return new Promise((resolve,reject)=>{const tx=db.transaction(OBJ
 function set(data){return new Promise((resolve,reject)=>{const tx=db.transaction(OBJECT,'readwrite');tx.objectStore(OBJECT).put(data,KEY);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||new Error('書き込み失敗'));tx.onabort=()=>reject(tx.error||new Error('書き込み中断'))});}
 function readLocal(key){try{const value=localStorage.getItem(key);return value?JSON.parse(value):null}catch{return null}}
 function removeLocal(key){try{localStorage.removeItem(key)}catch{}}
+function nativeStorage(){
+ return window.webkit?.messageHandlers?.muscleAtlasStorage || null;
+}
 export async function loadStore(){
+ const native=nativeStorage();
+ if(native){
+  const result=await native.postMessage({action:'load'});
+  if(result?.found){
+   const state=normalizeState(JSON.parse(result.json));
+   return {state,mode:'iOS app storage'};
+  }
+  return {state:emptyState(),mode:'iOS app storage'};
+ }
  let state;
  try{db=await openDB();mode='indexeddb';state=await get()}
  catch(e){db=null;mode='localStorage (fallback)';state=readLocal(FALLBACK)}
@@ -24,13 +36,20 @@ export async function loadStore(){
 }
 export async function saveStore(input){
  const state=normalizeState(input);state.updatedAt=new Date().toISOString();
+ const native=nativeStorage();
+ if(native){await native.postMessage({action:'save',json:JSON.stringify(state)});return state;}
  if(mode==='indexeddb'&&db){await set(state);removeLocal(FALLBACK)}
  else{localStorage.setItem(FALLBACK,JSON.stringify(state))}
  return state;
 }
 export const storageMode=()=>mode;
 export async function clearStore(){
- const state=emptyState();await saveStore(state);
+ const state=emptyState();
+ if(nativeStorage()){
+  await nativeStorage().postMessage({action:'clear'});
+  return state;
+ }
+ await saveStore(state);
  // Clear both historical stores: otherwise a later fallback could resurrect erased personal data.
  removeLocal(OLD);removeLocal(FALLBACK);
  return state;

@@ -1,9 +1,9 @@
-import {LANGUAGES,setLanguage,startTranslation,translate,formatDate,formatNumber,exerciseLabel,muscleLabel,insertionName,deletionPhrase,getLanguage,getNumberLocale} from './i18n.js';
+import {LANGUAGES,setLanguage,startTranslation,translate,formatDate,formatNumber,exerciseLabel,muscleLabel,deletionPhrase,getLanguage,getNumberLocale} from './i18n.js';
 import {evaluateTrainingDay,LEVELS} from './evaluation.js';
 import {findPersonalFood,savePersonalFood,mergePersonalFoods,personalFoodsBackup,readPersonalFoodsBackup} from './personal_food.js';
 import {FOOD_REFERENCE,parseFoodLines,calculateFoodTotals,dailyPFC,validatePFCGoal,parseBPText,normalizeVital} from './wellness.js';
 import {E,names} from './catalog.js';
-import {EXERCISE_GROUPS,searchExerciseDictionary,exerciseDictionaryCount} from './exercise_search.js';
+import {EXERCISE_GROUPS,searchExerciseDictionary,exerciseDictionaryCount,createDictionaryExerciseDraft,mergeDictionaryDrafts,sessionContentSignature,trainingEntryIsValid} from './exercise_search.js';
 import {PFC_PRESETS,pfcForPreset,matchPfcPreset,pfcGramTargets} from './presets.js';
 import {recommendForMuscle} from './recommend.js';
 import {anatomySVG} from './anatomy.js';
@@ -17,7 +17,7 @@ import {historyCutoff} from './history_range.js';
 import {summarizeActivityRings} from './fitness_activity.js';
 import {GOALS,parseTraining,normalizeState,emptyState,validateProfile,safeText,localToday,uid,setsOf,tonnage,bestE1RM,energy,summary,filterPeriod,feedback,mergeMissingDays,exerciseCatalog,restingMetabolicRate,validateCaloriePlan,normalizeMeal,dayCalorieBalance,recoveryForecast,exportBackupObject,normalizeTrainingPrefs,RECOVERY_GROUPS} from './engine.js';
 const $=id=>document.getElementById(id),val=id=>$(id)?.value;
-let state=emptyState(),period=1,selectedMuscle=null,selectedRecoveryMuscle=null,pending=null,editingId=null,ignoreUnmatched=new Set(),activeRoute='dashboard',noticeTimer=null;
+let state=emptyState(),period=1,selectedMuscle=null,selectedRecoveryMuscle=null,pending=null,editingId=null,dictionaryDraftExercises=[],ignoreUnmatched=new Set(),activeRoute='dashboard',noticeTimer=null;
 const HISTORY_PAGE_DAYS=45;let visibleTrainingDays=HISTORY_PAGE_DAYS,visibleMealDays=HISTORY_PAGE_DAYS;
 const number=x=>Number(x)||0;
 const askConfirm=text=>window.confirm(translate(text));
@@ -192,36 +192,58 @@ function renderExerciseLookup(){
  const listing=$('exercise-catalog-results');
  $('exercise-catalog-count').textContent=`${exerciseDictionaryCount}種目`;
  $('exercise-catalog-status').textContent=found.length?`${found.length}種目が一致しています。${Math.min(exerciseSearchLimit,found.length)}件を表示`:'条件に一致する種目はありません。別の名前や部位をお試しください。';
- listing.innerHTML=found.slice(0,exerciseSearchLimit).map(({i,exercise})=>`<div class="exercise-lookup-item"><div><strong>${safeText(exerciseLabel(exercise.n))}</strong><small>主な部位：${safeText(exercise.p.map(id=>muscleLabel(id)).join(' · '))}</small></div><button type="button" class="btn ghost compact" data-add-exercise="${i}" aria-label="${safeText(exercise.n)}を記録欄に追加">入力欄に追加</button></div>`).join('')+
+ listing.innerHTML=found.slice(0,exerciseSearchLimit).map(({i,exercise})=>`<div class="exercise-lookup-item"><div><strong>${safeText(exerciseLabel(exercise.n))}</strong><small>主な部位：${safeText(exercise.p.map(id=>muscleLabel(id)).join(' · '))}</small></div><button type="button" class="btn ghost compact" data-add-exercise="${i}" aria-label="${safeText(exercise.n)}を解析結果の編集欄に追加">編集欄に追加</button></div>`).join('')+
  (found.length>exerciseSearchLimit?`<button type="button" class="btn secondary compact exercise-more" data-exercise-more="true">さらに表示（残り${found.length-exerciseSearchLimit}件）</button>`:'');
+}
+function refreshSaveAvailability(){
+ if(!pending)return;
+ const sets=pending.exercises.reduce((sum,ex)=>sum+ex.groups.reduce((n,g)=>n+(Number(g.sets)||0),0),0);
+ $('preview-count').textContent=`${pending.exercises.length}種目 / ${sets}セット`;
+ $('preview-summary').innerHTML=`<strong>${pending.exercises.length}種目 · ${sets}セット · 有酸素${pending.cardio.length}件</strong><br><small>体重${state.profile.weight||'未入力'}kg・筋トレ${val('log-minutes')||'未入力'}分</small>`;
+ const hasExercises=pending.exercises.length>0 || pending.cardio.length>0;
+ $('save-session').disabled=!hasExercises||!pending.exercises.every(trainingEntryIsValid);
+}
+function addDictionaryExerciseToReview(exercise){
+ // New draft groups start blank, so the user must supply real reps and sets.
+ const draft=createDictionaryExerciseDraft(exercise,exerciseLabel(exercise.n),uid());
+ dictionaryDraftExercises.push(draft);
+ // If the text was changed since the last analysis, parse it first. Keep prior
+ // dictionary selections, including edits and added groups, on re-analysis.
+ if(!pending)analyze();
+ else {pending.exercises.push(draft);pending.warnings=pending.warnings.filter(w=>w!=='認識できる記録がありません。');renderPreview();}
+ const i=pending.exercises.findIndex(item=>item.id===draft.id);
+ const input=$('preview-exercises').querySelector(`[data-ex="${i}"][data-field="weight"]`);
+ $('preview-exercises').scrollIntoView({behavior:'smooth',block:'start'});
+ if(input){try{input.focus({preventScroll:true});}catch(_error){input.focus();}}
+ toast('解析結果に追加しました。重量・回数・セット数を入力してください。');
 }
 function invalidateTrainingAnalysis(){
  if(!pending)return;
  pending=null;ignoreUnmatched.clear();
- $('preview-count').textContent='再解析が必要';$('preview-summary').textContent='入力内容が変更されました。「入力を解析する」を押してから保存してください。';
+ $('preview-count').textContent='再解析が必要';$('preview-summary').textContent=dictionaryDraftExercises.length?'文章を変更しました。リストから選んだ種目は保持されています。「入力を解析する」で再表示してください。':'入力内容が変更されました。「入力を解析する」を押してから保存してください。';
  for(const id of ['preview-exercises','preview-cardio','preview-unmatched','review-alerts'])$(id).innerHTML='';
  $('save-session').disabled=true;
 }
-function resetForm(){editingId=null;pending=null;ignoreUnmatched.clear();$('log-date').value=localToday();$('log-minutes').value='';$('log-rest').value='';$('log-intensity').value='moderate';$('log-text').value='';$('log-notes').value='';$('preview-count').textContent='未解析';$('preview-summary').textContent='入力後「入力を解析する」を押してください。';for(const id of ['preview-exercises','preview-cardio','preview-unmatched','review-alerts'])$(id).innerHTML='';$('save-session').disabled=true;$('cancel-edit').hidden=true;$('duplicate-choice').hidden=true;$('duplicate-mode').value='';}
-function analyze(){pending=parseTraining(val('log-text'));
+function resetForm(){editingId=null;pending=null;dictionaryDraftExercises=[];ignoreUnmatched.clear();$('log-date').value=localToday();$('log-minutes').value='';$('log-rest').value='';$('log-intensity').value='moderate';$('log-text').value='';$('log-notes').value='';$('preview-count').textContent='未解析';$('preview-summary').textContent='文章を解析するか、種目リストから選ぶと、ここで重量・回数・セット数を編集できます。';for(const id of ['preview-exercises','preview-cardio','preview-unmatched','review-alerts'])$(id).innerHTML='';$('save-session').disabled=true;$('cancel-edit').hidden=true;$('duplicate-choice').hidden=true;$('duplicate-mode').value='';}
+function analyze(){pending=mergeDictionaryDrafts(parseTraining(val('log-text')),dictionaryDraftExercises);
  if(!val('log-minutes')&&pending.meta.minutes!==null)$('log-minutes').value=pending.meta.minutes;
  if(!val('log-rest')&&pending.meta.restMinutes!==null)$('log-rest').value=pending.meta.restMinutes;
  ignoreUnmatched.clear();$('duplicate-choice').hidden=true;$('duplicate-mode').value='';renderPreview();}
 function renderPreview(){if(!pending)return;const sets=pending.exercises.reduce((v,e)=>v+e.groups.reduce((x,g)=>x+g.sets,0),0);$('preview-count').textContent=pending.exercises.length+'種目 / '+sets+'セット';$('preview-summary').innerHTML=`<strong>${pending.exercises.length}種目 · ${sets}セット · 有酸素${pending.cardio.length}件</strong><br><small>体重${state.profile.weight||'未入力'}kg・筋トレ${val('log-minutes')||'未入力'}分</small>`;
  $('review-alerts').innerHTML=pending.warnings.map(w=>`<div class="warning">${safeText(w)}</div>`).join('');
- $('preview-exercises').innerHTML=pending.exercises.map((e,i)=>`<div class="review-item"><div class="review-head"><strong>${safeText(e.displayName||e.name)}</strong><button type="button" data-remove-ex="${i}" aria-label="この種目を削除">種目削除 ×</button></div>${e.groups.map((g,j)=>`<div class="set-row"><label>重量 kg<input type="number" min="0" max="2000" step="0.5" inputmode="decimal" data-ex="${i}" data-group="${j}" data-field="weight" value="${g.weight===null?'':g.weight}"></label><label>回数<input type="number" min="1" max="200" inputmode="numeric" data-ex="${i}" data-group="${j}" data-field="reps" value="${g.reps}"></label><label>セット<input type="number" min="1" max="50" inputmode="numeric" data-ex="${i}" data-group="${j}" data-field="sets" value="${g.sets}"></label><label>RIR<input type="number" min="0" max="20" inputmode="numeric" data-ex="${i}" data-group="${j}" data-field="rir" placeholder="任意" value="${g.rir??''}"></label><button type="button" data-remove-group="${i}:${j}" aria-label="セット組を削除">×</button></div>`).join('')}<button class="small-add" type="button" data-add-group="${i}">＋ セットを追加</button></div>`).join('');
+ $('preview-exercises').innerHTML=pending.exercises.map((e,i)=>`<div class="review-item"><div class="review-head"><strong>${safeText(e.displayName||e.name)}</strong>${e.raw?'':'<span class="dictionary-draft-chip">種目リスト</span>'}<button type="button" data-remove-ex="${i}" aria-label="この種目を削除">種目削除 ×</button></div>${e.groups.map((g,j)=>`<div class="set-row"><label>重量 kg<input type="number" min="0" max="2000" step="0.5" inputmode="decimal" data-ex="${i}" data-group="${j}" data-field="weight" value="${g.weight===null?'':g.weight}"></label><label>回数<input type="number" min="1" max="200" inputmode="numeric" data-ex="${i}" data-group="${j}" data-field="reps" value="${g.reps??''}" placeholder="必須"></label><label>セット<input type="number" min="1" max="50" inputmode="numeric" data-ex="${i}" data-group="${j}" data-field="sets" value="${g.sets??''}" placeholder="必須"></label><label>RIR<input type="number" min="0" max="20" inputmode="numeric" data-ex="${i}" data-group="${j}" data-field="rir" placeholder="任意" value="${g.rir??''}"></label><button type="button" data-remove-group="${i}:${j}" aria-label="セット組を削除">×</button></div>`).join('')}<button class="small-add" type="button" data-add-group="${i}">＋ セットを追加</button></div>`).join('');
  $('preview-cardio').innerHTML=pending.cardio.length?'<h3 style="font-size:14px;margin-top:18px">有酸素運動</h3>'+pending.cardio.map(c=>`<div class="info"><strong>${safeText(c.name)}</strong> · ${c.minutes===null?'時間不明':Number(c.minutes.toFixed(1))+'分'}${c.distanceKm!==null?' · '+c.distanceKm+'km':''}${c.speedKmh?' · '+c.speedKmh+'km/h':''}${c.grade!==null?' · 傾斜'+c.grade+(c.gradeUnit==='degrees'?'度':'%'):''}${c.needsReview?' · カロリー未計上':''}</div>`).join(''):'';
  $('preview-unmatched').innerHTML=pending.unmatched.length?'<div class="warning">未認識行は、アプリが黙って捨てないよう確認が必要です。元の文章を修正して再解析するか、明示的に除外してください。</div>'+pending.unmatched.map((u,i)=>`<div class="unmatched-row"><strong>${safeText(u.raw)}</strong><small>${safeText(u.reason)}</small><label><input type="checkbox" data-ignore="${i}" ${ignoreUnmatched.has(i)?'checked':''}> この行を集計から除外して保存する</label></div>`).join(''):'';
- $('save-session').disabled=!pending.exercises.length&&!pending.cardio.length;}
+ refreshSaveAvailability();}
 function validatePending(){if(!pending||!pending.exercises.length&&!pending.cardio.length)throw Error('解析済みの種目がありません');const bad=pending.unmatched.filter((_,i)=>!ignoreUnmatched.has(i));if(bad.length)throw Error('未認識の行を確認してください。無視する場合はチェックを入れてください。');for(const e of pending.exercises){if(!e.groups.length)throw Error('セットがない種目があります');for(const g of e.groups){if(!Number.isFinite(g.sets)||g.sets<1||g.sets>50||!Number.isInteger(g.sets)||!Number.isFinite(g.reps)||g.reps<1||g.reps>200||!Number.isInteger(g.reps)||g.weight!==null&&(!Number.isFinite(g.weight)||g.weight<0||g.weight>2000)||g.rir!==null&&(!Number.isInteger(g.rir)||g.rir<0||g.rir>20))throw Error('重量・回数・セット数を確認してください。');}}
  if(!/^\d{4}-\d{2}-\d{2}$/.test(val('log-date')))throw Error('日付を入力してください');if(val('log-minutes')!==''&&(!Number.isFinite(Number(val('log-minutes')))||Number(val('log-minutes'))<0||Number(val('log-minutes'))>600))throw Error('筋トレ時間を確認してください');if(val('log-rest')!==''&&(+val('log-rest')<0||+val('log-rest')>30))throw Error('休憩時間を確認してください');}
 async function commit(){try{validatePending();const day=val('log-date');const similar=state.logs.filter(l=>l.date===day&&l.id!==editingId);let mode='append';if(similar.length){$('duplicate-choice').hidden=false;mode=val('duplicate-mode');if(!['replace','append'].includes(mode)){toast('同じ日付の保存方法を選んでください');$('duplicate-choice').scrollIntoView({block:'nearest'});return;}}
  const item={id:editingId||uid(),date:day,minutes:val('log-minutes')===''?null:Number(val('log-minutes')),restMinutes:val('log-rest')===''?null:Number(val('log-rest')),intensity:val('log-intensity'),raw:val('log-text'),notes:val('log-notes'),weightSnapshot:state.profile.weight?Number(state.profile.weight):null,exercises:structuredClone(pending.exercises),cardio:structuredClone(pending.cardio),createdAt:state.logs.find(l=>l.id===editingId)?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
- if(mode==='append'&&state.logs.some(l=>l.id!==editingId&&l.date===day&&l.raw.trim()===item.raw.trim()))throw Error('同日・同内容の重複が見つかりました。');
+ if(mode==='append'&&state.logs.some(l=>l.id!==editingId&&l.date===day&&sessionContentSignature(l)===sessionContentSignature(item)))throw Error('同日・同内容の重複が見つかりました。');
  if(mode==='replace'&&similar.length&&!askConfirm('同じ日付の既存記録をすべて置換します。よろしいですか？'))return;
  const next=state.logs.filter(l=>l.id!==editingId&&!(mode==='replace'&&l.date===day));next.push(item);state.logs=next;await save();toast('記録を保存しました');resetForm();route('dashboard');}catch(e){toast(e.message)}}
 function editLog(id){const l=state.logs.find(x=>x.id===id);if(!l)return;resetForm();editingId=id;$('log-date').value=l.date;$('log-minutes').value=l.minutes??'';$('log-rest').value=l.restMinutes??'';$('log-intensity').value=l.intensity;$('log-text').value=l.raw;$('log-notes').value=l.notes||'';$('cancel-edit').hidden=false;route('record');analyze(); // preserve previously edited group values if source raw was unchanged
- if(l.exercises?.length&&l.raw.trim()===val('log-text').trim()){pending.exercises=structuredClone(l.exercises);pending.cardio=structuredClone(l.cardio);pending.unmatched=[];pending.warnings=[];renderPreview()}
+ if(l.exercises?.length&&l.raw.trim()===val('log-text').trim()){pending.exercises=structuredClone(l.exercises);pending.cardio=structuredClone(l.cardio);pending.unmatched=[];pending.warnings=[];dictionaryDraftExercises=pending.exercises.filter(ex=>!String(ex.raw||'').trim());renderPreview()}
  toast('編集中：'+dateText(l.date));}
 async function deleteLog(id){const l=state.logs.find(x=>x.id===id);if(!l)return;if(!askConfirm(`${dateText(l.date)}の記録を削除しますか？\nこの操作は取り消せません。`))return;state.logs=state.logs.filter(x=>x.id!==id);await save();renderHistory();toast('記録を削除しました');}
 function renderHistory(){
@@ -528,7 +550,7 @@ function renderSettings(){$('app-language').value=state.uiLanguage||'ja';for(con
 async function saveProfile(){const p={};for(const k of ['height','weight','age','sex','fat','muscle','goal','level','display'])p[k]=val('p-'+k);try{validateProfile(p);if(Number(state.profile.weight)!==Number(p.weight)){state.weights=state.weights||[];const d=localToday();const record={date:d,weight:Number(p.weight),savedAt:new Date().toISOString()};state.weights=state.weights.filter(x=>x.date!==d).concat(record);}state.profile=p;state.profileHistory=state.profileHistory||[];
  const effectiveDate=localToday();state.profileHistory=state.profileHistory.filter(x=>x.date!==effectiveDate).concat({date:effectiveDate,profile:{...p}});
  await save();renderDashboard();if(activeRoute==='nutrition')renderNutrition();toast('プロフィールを保存しました');}catch(e){toast(e.message)}}
-function download(name,content,mime){const url=URL.createObjectURL(new Blob([content],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+function download(name,content,mime){if(window.webkit?.messageHandlers?.muscleAtlasFile){window.webkit.messageHandlers.muscleAtlasFile.postMessage({name,content,mime});return}const url=URL.createObjectURL(new Blob([content],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
 function exportJSON(){download('MuscleAtlasPro_Backup_'+localToday()+'.json',JSON.stringify(exportBackupObject(state,$('export-include-dna').checked),null,2),'application/json');toast($('export-include-dna').checked?'DNA遺伝子型を含むJSONを作成しました':'DNA遺伝子型を含まないJSONを作成しました');}
 async function saveTrainingPrefs(){
  const prior=state.trainingPrefs;
@@ -791,17 +813,14 @@ function bind(){$('app-language').addEventListener('change',chooseLanguage);for(
   if(button.dataset.exerciseMore){exerciseSearchLimit+=18;renderExerciseLookup();return;}
   if(button.dataset.addExercise===undefined)return;
   const exercise=E[Number(button.dataset.addExercise)];if(!exercise)return;
-  const input=$('log-text');input.value+=(input.value.trim()&&!input.value.endsWith('\n')?'\n':'')+insertionName(exercise)+' ';
-  input.dispatchEvent(new Event('input',{bubbles:true}));
-  input.focus();input.setSelectionRange(input.value.length,input.value.length);
-  toast('種目名を追加しました。重量・回数・セット数を追記して解析してください。');
+  addDictionaryExerciseToReview(exercise);
  });
  $('log-text').addEventListener('input',invalidateTrainingAnalysis);
  renderExerciseLookup();
  $('insert-example').addEventListener('click',()=>{invalidateTrainingAnalysis();$('log-text').value='ベンチプレス 60k10r1s 80k8r1s 90k6r2s 80k8r\nケーブルクランチ 70kg50rep1set30rep1set\nトレーニング時間90分\nセット間2分\nトレッドミル 15%傾斜2.0km (6.0km/h)';toast('入力例をセットしました')});
  $('analyze-btn').addEventListener('click',analyze);$('save-session').addEventListener('click',commit);$('cancel-edit').addEventListener('click',()=>{resetForm();toast('編集を中止しました')});
- $('preview-exercises').addEventListener('input',e=>{const t=e.target;if(!t.dataset.field||!pending)return;const g=pending.exercises[Number(t.dataset.ex)]?.groups[Number(t.dataset.group)];if(!g)return;g[t.dataset.field]=t.value===''&&(t.dataset.field==='weight'||t.dataset.field==='rir')?null:Number(t.value);});
- $('preview-exercises').addEventListener('click',e=>{let t=e.target;if(!pending)return;if(t.dataset.removeEx!==undefined){pending.exercises.splice(Number(t.dataset.removeEx),1);renderPreview()}else if(t.dataset.removeGroup!==undefined){const [i,j]=t.dataset.removeGroup.split(':').map(Number);pending.exercises[i].groups.splice(j,1);renderPreview()}else if(t.dataset.addGroup!==undefined){const e=pending.exercises[Number(t.dataset.addGroup)],last=e.groups[e.groups.length-1]||{weight:null,reps:10,sets:1,rir:null};e.groups.push({...last,sets:1});renderPreview()}});
+ $('preview-exercises').addEventListener('input',e=>{const t=e.target;if(!t.dataset.field||!pending)return;const g=pending.exercises[Number(t.dataset.ex)]?.groups[Number(t.dataset.group)];if(!g)return;g[t.dataset.field]=t.value===''?null:Number(t.value);refreshSaveAvailability();});
+ $('preview-exercises').addEventListener('click',e=>{let t=e.target;if(!pending)return;if(t.dataset.removeEx!==undefined){const removed=pending.exercises.splice(Number(t.dataset.removeEx),1)[0];dictionaryDraftExercises=dictionaryDraftExercises.filter(draft=>draft.id!==removed?.id);renderPreview()}else if(t.dataset.removeGroup!==undefined){const [i,j]=t.dataset.removeGroup.split(':').map(Number);pending.exercises[i].groups.splice(j,1);renderPreview()}else if(t.dataset.addGroup!==undefined){const e=pending.exercises[Number(t.dataset.addGroup)],last=e.groups[e.groups.length-1]||{weight:null,reps:null,sets:null,rir:null};e.groups.push({...last,sets:last.sets??null});renderPreview()}});
  $('preview-unmatched').addEventListener('change',e=>{if(e.target.dataset.ignore===undefined)return;const id=Number(e.target.dataset.ignore);if(e.target.checked)ignoreUnmatched.add(id);else ignoreUnmatched.delete(id)});
  for(const id of ['history-query','history-period'])$(id).addEventListener(id==='history-query'?'input':'change',()=>{visibleTrainingDays=HISTORY_PAGE_DAYS;renderHistory()});$('history-load-more').addEventListener('click',()=>{visibleTrainingDays+=HISTORY_PAGE_DAYS;renderHistory()});$('history-expand-all').addEventListener('click',()=>setHistoryExpanded(true));$('history-collapse-all').addEventListener('click',()=>setHistoryExpanded(false));$('history-list').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.edit)editLog(t.dataset.edit);else if(t.dataset.delete)deleteLog(t.dataset.delete)});
  $('e1rm-exercise').addEventListener('change',renderProgress);$('forecast-calc').addEventListener('click',renderForecast);$('forecast-mode').addEventListener('change',renderForecast);$('forecast-exercise').addEventListener('change',renderForecast);$('forecast-save').addEventListener('click',saveForecastPlan);$('save-profile').addEventListener('click',saveProfile);$('export-json').addEventListener('click',exportJSON);$('export-csv').addEventListener('click',exportCSV);$('export-meals-csv').addEventListener('click',exportMealsCSV);$('import-json').addEventListener('change',e=>importJSON(e.target.files[0]));$('clear-data').addEventListener('click',clearAll);

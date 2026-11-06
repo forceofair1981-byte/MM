@@ -33,3 +33,31 @@ export function searchExerciseDictionary(query='',group='all'){
 }
 function score(row,q){if(!q)return 0;if(row.aliases[0]===q)return 0;if(row.aliases.includes(q))return 1;if(row.aliases.some(a=>a.startsWith(q)))return 2;return 3;}
 export const exerciseDictionaryCount=E.length;
+
+
+/** Exercise dictionary -> the same review editor used by free-text parsing.
+ * No fabricated weight or repetition count is inserted into the training log.
+ */
+export function createDictionaryExerciseDraft(exercise,displayName,id){
+ if(!exercise||!exercise.n||!Array.isArray(exercise.p)||!Array.isArray(exercise.s))throw Error('種目リストのデータが不正です');
+ return {id,name:exercise.n,displayName:displayName||exercise.n,primary:[...exercise.p],secondary:[...exercise.s],equipment:null,
+  groups:[{weight:null,reps:null,sets:null,rir:null,impliedSet:false}],raw:''};
+}
+export function mergeDictionaryDrafts(parsed,drafts=[]){
+ const merged={...parsed,exercises:[...parsed.exercises,...drafts]};
+ if(merged.exercises.length)merged.warnings=parsed.warnings.filter(message=>message!=='認識できる記録がありません。');
+ return merged;
+}
+export function trainingEntryIsValid(exercise){
+ return !!exercise?.groups?.length&&exercise.groups.every(g=>Number.isInteger(g.reps)&&g.reps>=1&&g.reps<=200
+  &&Number.isInteger(g.sets)&&g.sets>=1&&g.sets<=50
+  &&(g.weight===null||Number.isFinite(g.weight)&&g.weight>=0&&g.weight<=2000)
+  &&(g.rir===null||Number.isInteger(g.rir)&&g.rir>=0&&g.rir<=20));
+}
+/** Compare actual parsed content, not the input textarea (which may be empty for dictionary entries). */
+export function sessionContentSignature(session){
+ return JSON.stringify({
+  exercises:(session?.exercises||[]).map(e=>[e.name,(e.groups||[]).map(g=>[g.weight,g.reps,g.sets,g.rir])]),
+  cardio:(session?.cardio||[]).map(c=>[c.name,c.minutes,c.speedKmh,c.distanceKm,c.grade,c.gradeUnit])
+ });
+}
