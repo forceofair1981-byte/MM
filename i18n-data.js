@@ -4552,3 +4552,106 @@ export const L10N = {
 "記録はこのiPhone内に保存されます。定期的なバックアップをおすすめします。": {"en": "Your data is stored on this iPhone. Back up regularly.", "fr": "Les données sont stockées sur cet iPhone. Sauvegardez-les régulièrement.", "it": "I dati sono memorizzati su questo iPhone. Esegui backup regolari.", "es": "Los datos se guardan en este iPhone. Haz copias de seguridad periódicas.", "de": "Daten werden auf diesem iPhone gespeichert. Regelmäßig sichern."},
 "閉じる": {"en": "Close", "fr": "Fermer", "it": "Chiudi", "es": "Cerrar", "de": "Schließen"}
 };
+// v3.8.6 category-selection labels (ja / en / fr / it / es / de).
+Object.assign(L10N, {
+ "① 部位": {
+  "en": "① Muscle group",
+  "fr": "① Groupe musculaire",
+  "it": "① Gruppo muscolare",
+  "es": "① Grupo muscular",
+  "de": "① Muskelgruppe"
+ },
+ "② 器具・方法（中分類）": {
+  "en": "② Equipment / method",
+  "fr": "② Matériel / méthode",
+  "it": "② Attrezzo / metodo",
+  "es": "② Equipo / método",
+  "de": "② Gerät / Methode"
+ },
+ "③ 種目を選択": {
+  "en": "③ Choose an exercise",
+  "fr": "③ Choisir un exercice",
+  "it": "③ Scegli un esercizio",
+  "es": "③ Elegir un ejercicio",
+  "de": "③ Übung auswählen"
+ },
+ "器具・方法で絞り込む": {
+  "en": "Filter by equipment or method",
+  "fr": "Filtrer par matériel ou méthode",
+  "it": "Filtra per attrezzo o metodo",
+  "es": "Filtrar por equipo o método",
+  "de": "Nach Gerät oder Methode filtern"
+ },
+ "すべて": {
+  "en": "All",
+  "fr": "Tout",
+  "it": "Tutti",
+  "es": "Todos",
+  "de": "Alle"
+ },
+ "ダンベル": {
+  "en": "Dumbbells",
+  "fr": "Haltères",
+  "it": "Manubri",
+  "es": "Mancuernas",
+  "de": "Kurzhanteln"
+ },
+ "バーベル": {
+  "en": "Barbell",
+  "fr": "Barre",
+  "it": "Bilanciere",
+  "es": "Barra",
+  "de": "Langhantel"
+ },
+ "自重": {
+  "en": "Bodyweight",
+  "fr": "Poids du corps",
+  "it": "Corpo libero",
+  "es": "Peso corporal",
+  "de": "Körpergewicht"
+ },
+ "マシン": {
+  "en": "Machines",
+  "fr": "Machines",
+  "it": "Macchine",
+  "es": "Máquinas",
+  "de": "Geräte"
+ },
+ "ケーブル": {
+  "en": "Cable",
+  "fr": "Poulie",
+  "it": "Cavi",
+  "es": "Poleas",
+  "de": "Kabelzug"
+ },
+ "バンド": {
+  "en": "Resistance band",
+  "fr": "Élastique",
+  "it": "Elastici",
+  "es": "Bandas",
+  "de": "Widerstandsband"
+ },
+ "ケトルベル": {
+  "en": "Kettlebell",
+  "fr": "Kettlebell",
+  "it": "Kettlebell",
+  "es": "Pesa rusa",
+  "de": "Kettlebell"
+ },
+ "その他の器具": {
+  "en": "Other equipment",
+  "fr": "Autres équipements",
+  "it": "Altri attrezzi",
+  "es": "Otros equipos",
+  "de": "Andere Geräte"
+ },
+ "器具指定なし": {
+  "en": "Unspecified equipment",
+  "fr": "Matériel non précisé",
+  "it": "Attrezzo non specificato",
+  "es": "Equipo sin especificar",
+  "de": "Gerät nicht angegeben"
+ }
+});
+
+L10N["腹筋・体幹"]={en:"Abs & core",fr:"Abdos et tronc",it:"Addominali e core",es:"Abdominales y core",de:"Bauch & Rumpf"};

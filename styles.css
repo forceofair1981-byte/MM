@@ -284,3 +284,15 @@ html:not([lang="ja"]) .metric small{line-height:1.55;min-height:2.6em}
 .rest-stepper[data-status="failed"] #rest-stepper-status{color:#ffb6ba}
 .rest-stepper>.fine{margin:5px 0 0}
 @media(max-width:390px){.rest-stepper{padding:12px}.rest-stepper-actions{gap:6px}}
+
+/* v3.8.6: muscle -> equipment/method -> exercise picker. */
+.exercise-lookup-step{margin:10px 0 14px}
+.exercise-lookup-step-title{color:#c1dcef;font-size:12px;font-weight:800;letter-spacing:.02em;margin:8px 0 9px}
+.exercise-equipment-options{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.exercise-equipment-pill{display:inline-flex;align-items:center;gap:7px;justify-content:space-between;border:1px solid #3a5773;border-radius:14px;min-height:44px;padding:9px 11px;background:#182e48;color:#d7ebfc;font:inherit;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation}
+.exercise-equipment-pill small{font-variant-numeric:tabular-nums;border-radius:100px;background:#314765;padding:2px 6px;font-size:10px;color:#d8eaf6}
+.exercise-equipment-pill.active{border-color:#7bc7ef;background:#1b5c9b;color:#fff;box-shadow:0 0 0 1px #7bc7ef66}
+.exercise-equipment-pill.active small{background:#ffffff2b;color:#fff}
+.exercise-equipment-pill:focus-visible{outline:3px solid #74caff;outline-offset:2px}
+.exercise-exercises-title{margin-top:14px}
+@media(max-width:390px){.exercise-equipment-options{gap:6px}.exercise-equipment-pill{padding:9px 10px;font-size:12px}}

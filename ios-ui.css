@@ -459,3 +459,10 @@ html[data-theme="light"] .appearance-panel .appearance-sparkle { color:#1479d8;b
 html[data-theme="light"] .dictionary-draft-chip{background:#eaf2ff;color:#20549a;border-color:#bcd2f2}
 #preview-exercises{scroll-margin-top:20px}
 #preview-exercises input::placeholder{opacity:.8}
+
+/* v3.8.6: matching intermediate exercise categories in both iPhone themes. */
+html[data-theme="light"] .exercise-lookup-step-title{color:#275170}
+html[data-theme="light"] .exercise-equipment-pill{border-color:#cedbed;background:#f1f6fd;color:#295476}
+html[data-theme="light"] .exercise-equipment-pill small{background:#e0eaf7;color:#315a7e}
+html[data-theme="light"] .exercise-equipment-pill.active{border-color:#2479d6;background:#1679df;color:#fff;box-shadow:0 0 0 1px #2979cd30}
+html[data-theme="light"] .exercise-equipment-pill.active small{background:#ffffff34;color:#fff}

@@ -3,7 +3,7 @@ import {evaluateTrainingDay,LEVELS} from './evaluation.js';
 import {findPersonalFood,savePersonalFood,mergePersonalFoods,personalFoodsBackup,readPersonalFoodsBackup} from './personal_food.js';
 import {FOOD_REFERENCE,parseFoodLines,calculateFoodTotals,dailyPFC,validatePFCGoal,parseBPText,normalizeVital} from './wellness.js';
 import {E,names} from './catalog.js';
-import {EXERCISE_GROUPS,searchExerciseDictionary,exerciseDictionaryCount,createDictionaryExerciseDraft,mergeDictionaryDrafts,sessionContentSignature,trainingEntryIsValid} from './exercise_search.js';
+import {EXERCISE_GROUPS,EXERCISE_EQUIPMENT,exerciseEquipmentCounts,searchExerciseDictionary,exerciseDictionaryCount,createDictionaryExerciseDraft,mergeDictionaryDrafts,sessionContentSignature,trainingEntryIsValid} from './exercise_search.js';
 import {PFC_PRESETS,pfcForPreset,matchPfcPreset,pfcGramTargets} from './presets.js';
 import {recommendForMuscle} from './recommend.js';
 import {anatomySVG} from './anatomy.js';
@@ -187,8 +187,14 @@ async function saveExclusions(){
  catch(e){state.excludedMuscles=old;toast('保存に失敗しました：'+e.message)}
 }
 let exerciseSearchLimit=18;
+let exerciseEquipmentFilter='all';
 function renderExerciseLookup(){
- const found=searchExerciseDictionary(val('exercise-catalog-search'),val('exercise-catalog-group')||'all');
+ const query=val('exercise-catalog-search'),group=val('exercise-catalog-group')||'all';
+ const counts=exerciseEquipmentCounts(query,group);
+ // Keep the intermediate categories relevant to the selected muscle group.
+ $('exercise-catalog-equipment').innerHTML=EXERCISE_EQUIPMENT.filter(item=>item.id==='all'||counts[item.id]>0||item.id===exerciseEquipmentFilter).map(item=>
+  `<button type="button" class="exercise-equipment-pill${exerciseEquipmentFilter===item.id?' active':''}" data-exercise-equipment="${item.id}" aria-pressed="${exerciseEquipmentFilter===item.id}"><span>${safeText(item.label)}</span><small>${counts[item.id]}</small></button>`).join('');
+ const found=searchExerciseDictionary(query,group,exerciseEquipmentFilter);
  const listing=$('exercise-catalog-results');
  $('exercise-catalog-count').textContent=`${exerciseDictionaryCount}種目`;
  $('exercise-catalog-status').textContent=found.length?`${found.length}種目が一致しています。${Math.min(exerciseSearchLimit,found.length)}件を表示`:'条件に一致する種目はありません。別の名前や部位をお試しください。';
@@ -807,7 +813,12 @@ function bind(){$('app-language').addEventListener('change',chooseLanguage);for(
  for(const id of ['svg-front','svg-back'])$(id).addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-muscle]')){e.preventDefault();selectedMuscle=e.target.dataset.muscle;renderDashboard()}});
  $('exercise-catalog-group').innerHTML=EXERCISE_GROUPS.map(group=>`<option value="${group.id}">${safeText(group.label)}</option>`).join('');
  $('exercise-catalog-search').addEventListener('input',()=>{exerciseSearchLimit=18;renderExerciseLookup()});
- $('exercise-catalog-group').addEventListener('change',()=>{exerciseSearchLimit=18;renderExerciseLookup()});
+ $('exercise-catalog-group').addEventListener('change',()=>{exerciseEquipmentFilter='all';exerciseSearchLimit=18;renderExerciseLookup()});
+ $('exercise-catalog-equipment').addEventListener('click',event=>{
+  const button=event.target.closest('button[data-exercise-equipment]');if(!button)return;
+  exerciseEquipmentFilter=button.dataset.exerciseEquipment;
+  exerciseSearchLimit=18;renderExerciseLookup();
+ });
  $('exercise-catalog-results').addEventListener('click',event=>{
   const button=event.target.closest('button');if(!button)return;
   if(button.dataset.exerciseMore){exerciseSearchLimit+=18;renderExerciseLookup();return;}
