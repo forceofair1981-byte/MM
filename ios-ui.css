@@ -466,3 +466,8 @@ html[data-theme="light"] .exercise-equipment-pill{border-color:#cedbed;backgroun
 html[data-theme="light"] .exercise-equipment-pill small{background:#e0eaf7;color:#315a7e}
 html[data-theme="light"] .exercise-equipment-pill.active{border-color:#2479d6;background:#1679df;color:#fff;box-shadow:0 0 0 1px #2979cd30}
 html[data-theme="light"] .exercise-equipment-pill.active small{background:#ffffff34;color:#fff}
+
+/* v3.8.8 — accessible collapsed free-text input, matched light/dark surfaces. */
+html[data-theme="light"] #page-record .record-text-details{background:#fff;border-color:#d8e1ec}
+html[data-theme="light"] #page-record .record-text-details > summary{color:#075aa9}
+html[data-theme="light"] #page-record .record-text-details > summary::after{color:#0872d2}

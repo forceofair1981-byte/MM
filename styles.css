@@ -302,3 +302,27 @@ html:not([lang="ja"]) .metric small{line-height:1.55;min-height:2.6em}
 #page-record .form-grid > .exercise-lookup[open] {margin-bottom:8px}
 #page-record .form-grid > .exercise-lookup > summary {min-height:48px}
 #page-record .form-grid > label.full {min-width:0}
+
+/* v3.8.8 — free-text exercise entry starts folded below the open catalog. */
+#page-record .form-grid > .record-text-details{grid-column:1 / -1;min-width:0;margin:7px 0 4px;border:1px solid #36526d;border-radius:14px;background:#0b1a30;overflow:hidden}
+#page-record .record-text-details > summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:13px 15px;font-size:13px;font-weight:800;color:#d6ecfb;cursor:pointer;list-style:none;touch-action:manipulation}
+#page-record .record-text-details > summary::-webkit-details-marker{display:none}
+#page-record .record-text-details > summary::after{content:'+';font-size:22px;font-weight:500;line-height:1;color:#91c9e5;flex-shrink:0}
+#page-record .record-text-details[open] > summary::after{content:'−'}
+#page-record .record-text-body{padding:0 13px 14px}
+#page-record .record-text-body > label{display:flex;flex-direction:column;gap:6px;min-width:0}
+#page-record .record-text-body textarea{width:100%;max-width:100%;min-width:0}
+#page-record .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* v3.8.9 — copy a chosen training day as readable plain text */
+.training-copy-panel{margin-bottom:16px}
+.training-copy-actions{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:14px 0 10px}
+.training-copy-actions label{display:flex;flex-direction:column;gap:6px;flex:0 1 235px;min-width:170px;font-size:12px;font-weight:700;color:var(--text-muted,#a3bdd4)}
+.training-copy-actions input{width:100%;min-height:44px}
+.training-copy-actions button{min-height:44px}
+.training-copy-status{font-size:12px;color:var(--muted,#a3bdd4);margin:9px 0}
+.training-copy-preview{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:340px;overflow-y:auto;user-select:text;-webkit-user-select:text;background:#0b1b2c;border:1px solid #35516b;border-radius:12px;padding:14px;color:#dcebf5;margin:0}
+.training-day-copy-row{display:flex;justify-content:flex-end;padding-bottom:3px}
+@media(max-width:430px){.training-copy-actions label{flex:1 1 100%}.training-copy-actions button{width:100%}}
+html[data-theme="light"] .training-copy-preview{background:#f5f7fb;border-color:#d6e2ed;color:#1d3147}
+html[data-theme="light"] .training-copy-actions label,html[data-theme="light"] .training-copy-status{color:#4b6176}

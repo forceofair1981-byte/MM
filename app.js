@@ -14,6 +14,7 @@ import {scanDNA,normalizeDNAMarkers,parseExerciseReport,DNA_GENES} from './dna.j
 import {loadStore,saveStore,clearStore,storageMode} from './db.js';
 import {filterMeals,groupMeals,updateMealById} from './meal_history.js';
 import {historyCutoff} from './history_range.js';
+import {formatTrainingDayText} from './training_copy.js';
 import {summarizeActivityRings} from './fitness_activity.js';
 import {GOALS,parseTraining,normalizeState,emptyState,validateProfile,safeText,localToday,uid,setsOf,tonnage,bestE1RM,energy,summary,filterPeriod,feedback,mergeMissingDays,exerciseCatalog,restingMetabolicRate,validateCaloriePlan,normalizeMeal,dayCalorieBalance,recoveryForecast,exportBackupObject,normalizeTrainingPrefs,RECOVERY_GROUPS} from './engine.js';
 const $=id=>document.getElementById(id),val=id=>$(id)?.value;
@@ -63,7 +64,7 @@ function dominantPoseFromTotals(totals={},selectedId=''){
  const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
  return ranked[0]&&ranked[0][1]>0?ranked[0][0]:'balanced';
 }
-function route(name){if(!['dashboard','record','history','progress','nutrition','vitals','settings'].includes(name))return;activeRoute=name;for(const el of document.querySelectorAll('.page'))el.classList.toggle('active',el.id==='page-'+name);for(const el of document.querySelectorAll('[data-route]')){const active=el.dataset.route===name;el.classList.toggle('active',active);if(el.closest('nav')){if(active)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');}}document.getElementById('mobile-more-trigger')?.classList.toggle('active',['progress','vitals','settings'].includes(name));document.dispatchEvent(new CustomEvent('muscleatlas:route',{detail:{name}}));$('page-title').textContent={dashboard:'ダッシュボード',record:'トレーニング記録',history:'トレーニング履歴',progress:'成長・分析',nutrition:'カロリー管理',vitals:'血圧・心拍数',settings:'設定・データ'}[name];if(name==='dashboard')renderDashboard();if(name==='history')renderHistory();if(name==='progress')renderProgress();if(name==='nutrition')renderNutrition();if(name==='vitals')renderVitals();if(name==='settings')renderSettings();window.scrollTo({top:0,behavior:'instant'});}
+function route(name){if(!['dashboard','record','history','progress','nutrition','vitals','settings'].includes(name))return;activeRoute=name;if(name==='record')$('record-text-details').open=false;for(const el of document.querySelectorAll('.page'))el.classList.toggle('active',el.id==='page-'+name);for(const el of document.querySelectorAll('[data-route]')){const active=el.dataset.route===name;el.classList.toggle('active',active);if(el.closest('nav')){if(active)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');}}document.getElementById('mobile-more-trigger')?.classList.toggle('active',['progress','vitals','settings'].includes(name));document.dispatchEvent(new CustomEvent('muscleatlas:route',{detail:{name}}));$('page-title').textContent={dashboard:'ダッシュボード',record:'トレーニング記録',history:'トレーニング履歴',progress:'成長・分析',nutrition:'カロリー管理',vitals:'血圧・心拍数',settings:'設定・データ'}[name];if(name==='dashboard')renderDashboard();if(name==='history')renderHistory();if(name==='progress')renderProgress();if(name==='nutrition')renderNutrition();if(name==='vitals')renderVitals();if(name==='settings')renderSettings();window.scrollTo({top:0,behavior:'instant'});}
 function save(){return saveStore(state).then(v=>{state=v;$('storage-status').textContent=storageMode()==='indexeddb'?'● IndexedDB・端末内保存':'● 代替保存（端末内）';return v}).catch(e=>{toast('保存失敗：'+e.message);throw e});}
 function viewLogs(){return filterPeriod(state.logs,period)}
 function renderFitnessOverview(){
@@ -230,7 +231,7 @@ function invalidateTrainingAnalysis(){
  for(const id of ['preview-exercises','preview-cardio','preview-unmatched','review-alerts'])$(id).innerHTML='';
  $('save-session').disabled=true;
 }
-function resetForm(){editingId=null;pending=null;dictionaryDraftExercises=[];ignoreUnmatched.clear();$('log-date').value=localToday();$('log-minutes').value='';$('log-rest').value='';$('log-intensity').value='moderate';$('log-text').value='';$('log-notes').value='';$('preview-count').textContent='未解析';$('preview-summary').textContent='文章を解析するか、種目リストから選ぶと、ここで重量・回数・セット数を編集できます。';for(const id of ['preview-exercises','preview-cardio','preview-unmatched','review-alerts'])$(id).innerHTML='';$('save-session').disabled=true;$('cancel-edit').hidden=true;$('duplicate-choice').hidden=true;$('duplicate-mode').value='';}
+function resetForm(){$('record-text-details').open=false;editingId=null;pending=null;dictionaryDraftExercises=[];ignoreUnmatched.clear();$('log-date').value=localToday();$('log-minutes').value='';$('log-rest').value='';$('log-intensity').value='moderate';$('log-text').value='';$('log-notes').value='';$('preview-count').textContent='未解析';$('preview-summary').textContent='文章を解析するか、種目リストから選ぶと、ここで重量・回数・セット数を編集できます。';for(const id of ['preview-exercises','preview-cardio','preview-unmatched','review-alerts'])$(id).innerHTML='';$('save-session').disabled=true;$('cancel-edit').hidden=true;$('duplicate-choice').hidden=true;$('duplicate-mode').value='';}
 function analyze(){pending=mergeDictionaryDrafts(parseTraining(val('log-text')),dictionaryDraftExercises);
  if(!val('log-minutes')&&pending.meta.minutes!==null)$('log-minutes').value=pending.meta.minutes;
  if(!val('log-rest')&&pending.meta.restMinutes!==null)$('log-rest').value=pending.meta.restMinutes;
@@ -252,6 +253,60 @@ function editLog(id){const l=state.logs.find(x=>x.id===id);if(!l)return;resetFor
  if(l.exercises?.length&&l.raw.trim()===val('log-text').trim()){pending.exercises=structuredClone(l.exercises);pending.cardio=structuredClone(l.cardio);pending.unmatched=[];pending.warnings=[];dictionaryDraftExercises=pending.exercises.filter(ex=>!String(ex.raw||'').trim());renderPreview()}
  toast('編集中：'+dateText(l.date));}
 async function deleteLog(id){const l=state.logs.find(x=>x.id===id);if(!l)return;if(!askConfirm(`${dateText(l.date)}の記録を削除しますか？\nこの操作は取り消せません。`))return;state.logs=state.logs.filter(x=>x.id!==id);await save();renderHistory();toast('記録を削除しました');}
+function refreshTrainingCopyPreview(){
+ const date=val('history-copy-date');
+ const text=formatTrainingDayText(state.logs,date);
+ $('history-copy-preview').textContent=text||'この日付のトレーニング記録はありません。';
+ $('history-copy-button').disabled=!text;
+ $('history-copy-status').textContent=text?`${dateText(date)}の記録をコピーできます。`:'選択した日付には記録がありません。';
+ return text;
+}
+function fallbackCopyTrainingText(text){
+ const area=document.createElement('textarea');
+ area.value=text;area.setAttribute('readonly','');
+ area.style.cssText='position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
+ document.body.appendChild(area);
+ const selection=document.getSelection();
+ const oldRanges=[];
+ if(selection)for(let i=0;i<selection.rangeCount;i++)oldRanges.push(selection.getRangeAt(i));
+ area.focus();area.select();area.setSelectionRange(0,text.length);
+ let copied=false;
+ try{copied=Boolean(document.execCommand('copy'));}catch(_e){}
+ area.remove();
+ if(selection){selection.removeAllRanges();for(const range of oldRanges)selection.addRange(range);}
+ return copied;
+}
+function nativeClipboardText(text){
+ const handler=window.webkit?.messageHandlers?.muscleAtlasClipboard;
+ if(!handler)return null;
+ return new Promise((resolve,reject)=>{
+  const requestId=`copy-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  let timeout;
+  const finish=event=>{
+   if(event.detail?.id!==requestId)return;
+   clearTimeout(timeout);window.removeEventListener('muscleatlas:clipboard-result',finish);
+   event.detail.ok?resolve():reject(new Error('native clipboard failed'));
+  };
+  window.addEventListener('muscleatlas:clipboard-result',finish);
+  timeout=setTimeout(()=>{window.removeEventListener('muscleatlas:clipboard-result',finish);reject(new Error('native clipboard timeout'));},3500);
+  try{handler.postMessage({requestId,text});}catch(err){clearTimeout(timeout);window.removeEventListener('muscleatlas:clipboard-result',finish);reject(err);}
+ });
+}
+async function copyTrainingDay(date){
+ const text=formatTrainingDayText(state.logs,date);
+ if(!text){toast('選択した日付には記録がありません。');return;}
+ $('history-copy-date').value=date;
+ refreshTrainingCopyPreview();
+ const button=$('history-copy-button');button.disabled=true;
+ try{
+  const native=nativeClipboardText(text);
+  if(native)await native;
+  else if(navigator.clipboard?.writeText){try{await navigator.clipboard.writeText(text);}catch(err){if(!fallbackCopyTrainingText(text))throw err;}}
+  else if(!fallbackCopyTrainingText(text))throw new Error('clipboard unavailable');
+  toast('トレーニング一覧をコピーしました');
+ }catch(err){toast('コピーできませんでした。下のテキストを選択してコピーしてください。');}
+ finally{refreshTrainingCopyPreview();}
+}
 function renderHistory(){
  const q=(val('history-query')||'').trim().toLowerCase();
  const cutoff=historyCutoff(val('history-period'),localToday());
@@ -263,6 +318,7 @@ function renderHistory(){
   .filter(l=>(!cutoff||l.date>=cutoff)&&(!q||l.date.includes(q)||(l.exercises||[]).some(e=>(String(e.name||'')+' '+String(e.displayName||'')).toLowerCase().includes(q))));
  const groups=new Map();
  for(const log of logs){if(!groups.has(log.date))groups.set(log.date,[]);groups.get(log.date).push(log)}
+ refreshTrainingCopyPreview();
  $('history-count').textContent=`${logs.length}件 / ${groups.size}日`;
  $('history-expand-all').disabled=logs.length===0;
  $('history-collapse-all').disabled=logs.length===0;
@@ -274,7 +330,7 @@ function renderHistory(){
   const open=q||openDays.has(date)?' open':'';
   return `<details class="training-day" data-day="${safeText(date)}"${open}>
    <summary class="training-day-summary"><span class="training-day-label"><strong>${safeText(dateText(date))}</strong><small>${sessions.length}件のトレーニング</small></span><span class="training-day-stats">${daySets}セット · 総挙上重量 ${compact(dayTonnage)}kg</span><span class="fold-chevron" aria-hidden="true"></span></summary>
-   <div class="training-day-body">${sessions.map((l,i)=>{
+   <div class="training-day-body"><div class="training-day-copy-row"><button class="btn secondary compact" type="button" data-copy-day="${safeText(date)}">この日の一覧をコピー</button></div>${sessions.map((l,i)=>{
     const kcal=energy(l),ev=evaluateTrainingDay(state.logs,l.date,state.evaluationLevel,state.profile.goal);
     const name=(l.exercises||[]).slice(0,2).map(x=>x.name).join(' · ')||(l.cardio||[]).map(x=>x.name).slice(0,2).join(' · ')||'有酸素運動';
     const other=(l.exercises||[]).length>2?' ほか':'';
@@ -828,12 +884,13 @@ function bind(){$('app-language').addEventListener('change',chooseLanguage);for(
  });
  $('log-text').addEventListener('input',invalidateTrainingAnalysis);
  renderExerciseLookup();
- $('insert-example').addEventListener('click',()=>{invalidateTrainingAnalysis();$('log-text').value='ベンチプレス 60k10r1s 80k8r1s 90k6r2s 80k8r\nケーブルクランチ 70kg50rep1set30rep1set\nトレーニング時間90分\nセット間2分\nトレッドミル 15%傾斜2.0km (6.0km/h)';toast('入力例をセットしました')});
+ $('insert-example').addEventListener('click',()=>{invalidateTrainingAnalysis();$('log-text').value='ベンチプレス 60k10r1s 80k8r1s 90k6r2s 80k8r\nケーブルクランチ 70kg50rep1set30rep1set\nトレーニング時間90分\nセット間2分\nトレッドミル 15%傾斜2.0km (6.0km/h)';$('record-text-details').open=true;toast('入力例をセットしました')});
  $('analyze-btn').addEventListener('click',analyze);$('save-session').addEventListener('click',commit);$('cancel-edit').addEventListener('click',()=>{resetForm();toast('編集を中止しました')});
  $('preview-exercises').addEventListener('input',e=>{const t=e.target;if(!t.dataset.field||!pending)return;const g=pending.exercises[Number(t.dataset.ex)]?.groups[Number(t.dataset.group)];if(!g)return;g[t.dataset.field]=t.value===''?null:Number(t.value);refreshSaveAvailability();});
  $('preview-exercises').addEventListener('click',e=>{let t=e.target;if(!pending)return;if(t.dataset.removeEx!==undefined){const removed=pending.exercises.splice(Number(t.dataset.removeEx),1)[0];dictionaryDraftExercises=dictionaryDraftExercises.filter(draft=>draft.id!==removed?.id);renderPreview()}else if(t.dataset.removeGroup!==undefined){const [i,j]=t.dataset.removeGroup.split(':').map(Number);pending.exercises[i].groups.splice(j,1);renderPreview()}else if(t.dataset.addGroup!==undefined){const e=pending.exercises[Number(t.dataset.addGroup)],last=e.groups[e.groups.length-1]||{weight:null,reps:null,sets:null,rir:null};e.groups.push({...last,sets:last.sets??null});renderPreview()}});
  $('preview-unmatched').addEventListener('change',e=>{if(e.target.dataset.ignore===undefined)return;const id=Number(e.target.dataset.ignore);if(e.target.checked)ignoreUnmatched.add(id);else ignoreUnmatched.delete(id)});
- for(const id of ['history-query','history-period'])$(id).addEventListener(id==='history-query'?'input':'change',()=>{visibleTrainingDays=HISTORY_PAGE_DAYS;renderHistory()});$('history-load-more').addEventListener('click',()=>{visibleTrainingDays+=HISTORY_PAGE_DAYS;renderHistory()});$('history-expand-all').addEventListener('click',()=>setHistoryExpanded(true));$('history-collapse-all').addEventListener('click',()=>setHistoryExpanded(false));$('history-list').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.edit)editLog(t.dataset.edit);else if(t.dataset.delete)deleteLog(t.dataset.delete)});
+ $('history-copy-date').addEventListener('change',refreshTrainingCopyPreview);$('history-copy-button').addEventListener('click',()=>copyTrainingDay(val('history-copy-date')));
+ for(const id of ['history-query','history-period'])$(id).addEventListener(id==='history-query'?'input':'change',()=>{visibleTrainingDays=HISTORY_PAGE_DAYS;renderHistory()});$('history-load-more').addEventListener('click',()=>{visibleTrainingDays+=HISTORY_PAGE_DAYS;renderHistory()});$('history-expand-all').addEventListener('click',()=>setHistoryExpanded(true));$('history-collapse-all').addEventListener('click',()=>setHistoryExpanded(false));$('history-list').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.edit)editLog(t.dataset.edit);else if(t.dataset.delete)deleteLog(t.dataset.delete);else if(t.dataset.copyDay)copyTrainingDay(t.dataset.copyDay)});
  $('e1rm-exercise').addEventListener('change',renderProgress);$('forecast-calc').addEventListener('click',renderForecast);$('forecast-mode').addEventListener('change',renderForecast);$('forecast-exercise').addEventListener('change',renderForecast);$('forecast-save').addEventListener('click',saveForecastPlan);$('save-profile').addEventListener('click',saveProfile);$('export-json').addEventListener('click',exportJSON);$('export-csv').addEventListener('click',exportCSV);$('export-meals-csv').addEventListener('click',exportMealsCSV);$('import-json').addEventListener('change',e=>importJSON(e.target.files[0]));$('clear-data').addEventListener('click',clearAll);
  $('food-catalog-search').addEventListener('input',renderFoodCatalogSearch);
  $('food-catalog-results').addEventListener('click',e=>{const btn=e.target.closest('[data-pick-food]');if(!btn)return;const name=btn.dataset.pickFood;const inp=$('food-lines');inp.value+=(inp.value.trim()?'\n':'')+'・'+name+' 100g';lastParsedFood=null;lastParsedRaw='';$('food-preview').textContent='食品を追加しました。分量を修正し、解析を実行してください。';inp.focus()});
@@ -865,5 +922,5 @@ function bind(){$('app-language').addEventListener('change',chooseLanguage);for(
  });
  $('nutrition-date').addEventListener('change',renderNutrition);$('nutrition-workout-day').addEventListener('change',e=>{if(e.target.value){$('nutrition-date').value=e.target.value;renderNutrition()}});$('nutrition-today').addEventListener('click',()=>{$('nutrition-date').value=localToday();renderNutrition()});$('save-calorie-plan').addEventListener('click',saveCaloriePlan);$('save-meal').addEventListener('click',saveMeal);$('meal-list').addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;if(btn.dataset.editMeal)startMealEdit(btn.dataset.editMeal);else if(btn.dataset.deleteMeal)deleteMeal(btn.dataset.deleteMeal)});
 }
-async function init(){try{({state}=await loadStore());setLanguage(state.uiLanguage||'ja');try{localStorage.setItem('muscle-atlas-ui-language',state.uiLanguage||'ja')}catch{}startTranslation();$('recovery-date').value=localToday();$('tomorrow-base-date').value=localToday();$('storage-status').textContent=storageMode()==='indexeddb'?'● 端末内保存（外部同期なし）':'● 端末内代替保存（外部同期なし）';bind();initExclusionsFold();resetForm();setForecastControls();renderDashboard();$('nutrition-date').value=localToday();$('cal-activity').value=state.caloriePlan.activityFactor;$('cal-credit').value=state.caloriePlan.exerciseCredit;$('cal-adjust').value=state.caloriePlan.goalAdjustment;if(state.logs.length)toast(`${state.logs.length}件の記録を読み込みました`);window.MA_BOOT_OK?.();if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});}catch(e){$('storage-status').textContent='保存エラー';toast('起動できません：'+e.message);window.MA_BOOT_FAIL?.(e);console.error(e)}}
+async function init(){try{({state}=await loadStore());setLanguage(state.uiLanguage||'ja');try{localStorage.setItem('muscle-atlas-ui-language',state.uiLanguage||'ja')}catch{}startTranslation();$('recovery-date').value=localToday();$('tomorrow-base-date').value=localToday();$('history-copy-date').value=[...state.logs].map(l=>l.date).sort().at(-1)||localToday();$('storage-status').textContent=storageMode()==='indexeddb'?'● 端末内保存（外部同期なし）':'● 端末内代替保存（外部同期なし）';bind();initExclusionsFold();resetForm();setForecastControls();renderDashboard();$('nutrition-date').value=localToday();$('cal-activity').value=state.caloriePlan.activityFactor;$('cal-credit').value=state.caloriePlan.exerciseCredit;$('cal-adjust').value=state.caloriePlan.goalAdjustment;if(state.logs.length)toast(`${state.logs.length}件の記録を読み込みました`);window.MA_BOOT_OK?.();if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});}catch(e){$('storage-status').textContent='保存エラー';toast('起動できません：'+e.message);window.MA_BOOT_FAIL?.(e);console.error(e)}}
 init();
