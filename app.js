@@ -16,6 +16,8 @@ import {filterMeals,groupMeals,updateMealById} from './meal_history.js';
 import {historyCutoff} from './history_range.js';
 import {formatTrainingDayText} from './training_copy.js';
 import {dailyTrainingForDate} from './daily_training.js';
+import {installNativeBackupImport} from './native_import.js';
+import {backupFileName,validUserSerial} from './backup_identity.js';
 import {summarizeActivityRings} from './fitness_activity.js';
 import {GOALS,parseTraining,normalizeState,emptyState,validateProfile,safeText,localToday,uid,setsOf,tonnage,bestE1RM,energy,summary,filterPeriod,feedback,mergeMissingDays,exerciseCatalog,restingMetabolicRate,validateCaloriePlan,normalizeMeal,dayCalorieBalance,recoveryForecast,exportBackupObject,backupSettingsSummary,restoreProfileAndRecoverySettings,normalizeTrainingPrefs,RECOVERY_GROUPS} from './engine.js';
 const $=id=>document.getElementById(id),val=id=>$(id)?.value;
@@ -315,6 +317,16 @@ function nativeClipboardText(text){
   timeout=setTimeout(()=>{window.removeEventListener('muscleatlas:clipboard-result',finish);reject(new Error('native clipboard timeout'));},3500);
   try{handler.postMessage({requestId,text});}catch(err){clearTimeout(timeout);window.removeEventListener('muscleatlas:clipboard-result',finish);reject(err);}
  });
+}
+async function copyUserSerial(){
+ const serial=state.userSerial;
+ try{
+  const native=nativeClipboardText(serial);
+  if(native)await native;
+  else if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(serial);
+  else if(!fallbackCopyTrainingText(serial))throw new Error('clipboard unavailable');
+  toast('ユーザーシリアルをコピーしました');
+ }catch(_error){toast('コピーできませんでした。シリアルを長押ししてコピーしてください');}
 }
 async function copyTrainingDay(date){
  const text=formatTrainingDayText(state.logs,date,state.dailyTraining);
@@ -639,12 +651,12 @@ function renderBackupSettingsSummary(){
  const value=(n,unit)=>n===null||!Number.isFinite(n)?'未設定':String(n)+unit;
  el.textContent='現在の保存済み設定：身長 '+value(p.heightCm,'cm')+' ／ 体重 '+value(p.weightKg,'kg')+' ／ 年齢 '+value(p.ageYears,'歳')+'。回復期間：'+groups.map(([k,label])=>label+' '+(r.groupRestDays[k]??'自動')+(r.groupRestDays[k]==null?'':'日')).join('・')+'。全体休養補正 '+(r.extraRestDays>=0?'+':'')+r.extraRestDays+'日。';
 }
-function renderSettings(){$('app-language').value=state.uiLanguage||'ja';for(const k of ['height','weight','age','sex','fat','muscle','goal','level','display'])$('p-'+k).value=state.profile[k]??'';$('evaluation-level').value=state.evaluationLevel||'normal';$('train-target-rir').value=String(state.trainingPrefs?.targetRir||2);$('train-extra-rest').value=String(state.trainingPrefs?.extraRestDays??0);renderRestStepper('saved');renderGroupRestDays();renderExclusions();renderDNASettings();renderBackupSettingsSummary();$('storage-message').textContent='保存方式：'+storageMode()+'。トレーニング・食事は端末ごとに保存。バックアップは暗号化されません。';}
+function renderSettings(){if($('user-serial'))$('user-serial').textContent=state.userSerial;$('app-language').value=state.uiLanguage||'ja';for(const k of ['height','weight','age','sex','fat','muscle','goal','level','display'])$('p-'+k).value=state.profile[k]??'';$('evaluation-level').value=state.evaluationLevel||'normal';$('train-target-rir').value=String(state.trainingPrefs?.targetRir||2);$('train-extra-rest').value=String(state.trainingPrefs?.extraRestDays??0);renderRestStepper('saved');renderGroupRestDays();renderExclusions();renderDNASettings();renderBackupSettingsSummary();$('storage-message').textContent='保存方式：'+storageMode()+'。トレーニング・食事は端末ごとに保存。バックアップは暗号化されません。';}
 async function saveProfile(){const p={};for(const k of ['height','weight','age','sex','fat','muscle','goal','level','display'])p[k]=val('p-'+k);try{validateProfile(p);if(Number(state.profile.weight)!==Number(p.weight)){state.weights=state.weights||[];const d=localToday();const record={date:d,weight:Number(p.weight),savedAt:new Date().toISOString()};state.weights=state.weights.filter(x=>x.date!==d).concat(record);}state.profile=p;state.profileHistory=state.profileHistory||[];
  const effectiveDate=localToday();state.profileHistory=state.profileHistory.filter(x=>x.date!==effectiveDate).concat({date:effectiveDate,profile:{...p}});
  await save();renderDashboard();renderBackupSettingsSummary();if(activeRoute==='nutrition')renderNutrition();toast('プロフィールを保存しました');}catch(e){toast(e.message)}}
 function download(name,content,mime){if(window.webkit?.messageHandlers?.muscleAtlasFile){window.webkit.messageHandlers.muscleAtlasFile.postMessage({name,content,mime});return}const url=URL.createObjectURL(new Blob([content],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
-function exportJSON(){download('MuscleAtlasPro_Backup_'+localToday()+'.json',JSON.stringify(exportBackupObject(state,$('export-include-dna').checked),null,2),'application/json');toast($('export-include-dna').checked?'DNA遺伝子型を含むJSONを作成しました':'DNA遺伝子型を含まないJSONを作成しました');}
+function exportJSON(){download(backupFileName(localToday()),JSON.stringify(exportBackupObject(state,$('export-include-dna').checked),null,2),'application/octet-stream');toast($('export-include-dna').checked?'DNA遺伝子型を含むAtlasデータを保存しました':'Atlasデータを保存しました');}
 async function saveTrainingPrefs(){
  const prior=state.trainingPrefs;
  const pendingPrefs=normalizeTrainingPrefs({targetRir:val('train-target-rir'),extraRestDays:val('train-extra-rest'),groupRestDays:collectGroupRestDays()});
@@ -715,7 +727,10 @@ async function importJSON(file){
  if(!file)return;
  try{
   if(file.size>15*1024*1024)throw Error('ファイルサイズが15MBを超えています');
-  const raw=JSON.parse(await file.text()),data=normalizeState(raw);
+  const raw=JSON.parse((await file.text()).replace(/^\uFEFF/,''));
+  if(!raw || typeof raw!=='object' || Array.isArray(raw) || !Array.isArray(raw.logs) || !raw.profile || typeof raw.profile!=='object' || Array.isArray(raw.profile))throw Error('Muscle Atlas Proの保存データではありません');
+  if(raw.userSerial!==undefined && !validUserSerial(raw.userSerial))throw Error('保存データのユーザーシリアルが無効です');
+  const data=normalizeState(raw);
   const mode=val('import-mode');
   if(mode==='merge'){
    const merged=mergeMissingDays(state,data);
@@ -728,8 +743,8 @@ async function importJSON(file){
    const oldState=state;try{state=restored?restored.state:merged.state;await save()}catch(e){state=oldState;throw e}
    toast(`${merged.added}件追加、${merged.skipped}件スキップ${restored?'・身体・回復設定を復元':''}しました`);
   }else if(mode==='replace'){
-   if(!askConfirm(`${data.logs.length}件で全記録・プロフィール・回復設定を上書きします。\n現在のデータは失われます。バックアップは保存しましたか？`))return;
-   const oldState=state;try{state=data;await save()}catch(e){state=oldState;throw e}
+   if(!askConfirm(`${data.logs.length}件で全記録・プロフィール・回復設定を上書きします。\n${raw.userSerial?'バックアップのユーザーシリアルも引き継ぎます。':'旧形式のため現在のユーザーシリアルを維持します。'}\n現在のデータは失われます。バックアップは保存しましたか？`))return;
+   const oldState=state;try{state=raw.userSerial?data:{...data,userSerial:state.userSerial};await save()}catch(e){state=oldState;throw e}
    toast(`${data.logs.length}件を復元しました`);
   }else throw Error('取り込み方法を選択してください');
   closeMealEditor();pending=null;renderSettings();setForecastControls();$('cal-activity').value=state.caloriePlan.activityFactor;$('cal-credit').value=state.caloriePlan.exerciseCredit;$('cal-adjust').value=state.caloriePlan.goalAdjustment;renderDashboard();renderHistory();renderProgress();renderNutrition();renderVitals();
@@ -930,7 +945,7 @@ function bind(){$('app-language').addEventListener('change',chooseLanguage);for(
  $('preview-unmatched').addEventListener('change',e=>{if(e.target.dataset.ignore===undefined)return;const id=Number(e.target.dataset.ignore);if(e.target.checked)ignoreUnmatched.add(id);else ignoreUnmatched.delete(id)});
  $('history-copy-date').addEventListener('change',refreshTrainingCopyPreview);$('history-copy-button').addEventListener('click',()=>copyTrainingDay(val('history-copy-date')));
  for(const id of ['history-query','history-period'])$(id).addEventListener(id==='history-query'?'input':'change',()=>{visibleTrainingDays=HISTORY_PAGE_DAYS;renderHistory()});$('history-load-more').addEventListener('click',()=>{visibleTrainingDays+=HISTORY_PAGE_DAYS;renderHistory()});$('history-expand-all').addEventListener('click',()=>setHistoryExpanded(true));$('history-collapse-all').addEventListener('click',()=>setHistoryExpanded(false));$('history-list').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.edit)editLog(t.dataset.edit);else if(t.dataset.delete)deleteLog(t.dataset.delete);else if(t.dataset.copyDay)copyTrainingDay(t.dataset.copyDay);else if(t.dataset.editDay){resetForm();$('log-date').value=t.dataset.editDay;showDailyTime(t.dataset.editDay);route('record');$('log-minutes').focus()}});
- $('e1rm-exercise').addEventListener('change',renderProgress);$('forecast-calc').addEventListener('click',renderForecast);$('forecast-mode').addEventListener('change',renderForecast);$('forecast-exercise').addEventListener('change',renderForecast);$('forecast-save').addEventListener('click',saveForecastPlan);$('save-profile').addEventListener('click',saveProfile);$('export-json').addEventListener('click',exportJSON);$('export-csv').addEventListener('click',exportCSV);$('export-meals-csv').addEventListener('click',exportMealsCSV);$('import-json').addEventListener('change',e=>importJSON(e.target.files[0]));$('clear-data').addEventListener('click',clearAll);
+ $('e1rm-exercise').addEventListener('change',renderProgress);$('forecast-calc').addEventListener('click',renderForecast);$('forecast-mode').addEventListener('change',renderForecast);$('forecast-exercise').addEventListener('change',renderForecast);$('forecast-save').addEventListener('click',saveForecastPlan);$('save-profile').addEventListener('click',saveProfile);$('export-json').addEventListener('click',exportJSON);$('copy-user-serial').addEventListener('click',copyUserSerial);$('export-csv').addEventListener('click',exportCSV);$('export-meals-csv').addEventListener('click',exportMealsCSV);$('import-json').addEventListener('change',e=>importJSON(e.target.files[0]));installNativeBackupImport({webLabel:$('import-json-web'),nativeButton:$('import-json-native'),onFile:importJSON,onError:toast});$('clear-data').addEventListener('click',clearAll);
  $('food-catalog-search').addEventListener('input',renderFoodCatalogSearch);
  $('food-catalog-results').addEventListener('click',e=>{const btn=e.target.closest('[data-pick-food]');if(!btn)return;const name=btn.dataset.pickFood;const inp=$('food-lines');inp.value+=(inp.value.trim()?'\n':'')+'・'+name+' 100g';lastParsedFood=null;lastParsedRaw='';$('food-preview').textContent='食品を追加しました。分量を修正し、解析を実行してください。';inp.focus()});
  $('personal-food-search').addEventListener('input',renderPersonalFoods);

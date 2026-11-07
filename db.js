@@ -17,10 +17,14 @@ export async function loadStore(){
  if(native){
   const result=await native.postMessage({action:'load'});
   if(result?.found){
-   const state=normalizeState(JSON.parse(result.json));
+   const source=JSON.parse(result.json);
+   const state=normalizeState(source);
+   if(!source.userSerial)await native.postMessage({action:'save',json:JSON.stringify(state)});
    return {state,mode:'iOS app storage'};
   }
-  return {state:emptyState(),mode:'iOS app storage'};
+  const fresh=emptyState();
+  await native.postMessage({action:'save',json:JSON.stringify(fresh)});
+  return {state:fresh,mode:'iOS app storage'};
  }
  let state;
  try{db=await openDB();mode='indexeddb';state=await get()}
@@ -32,7 +36,9 @@ export async function loadStore(){
   catch{state=emptyState()}
   await saveStore(state);
  }
- return {state:normalizeState(state),mode};
+ const normalized=normalizeState(state);
+ if(!state.userSerial)await saveStore(normalized);
+ return {state:normalized,mode};
 }
 export async function saveStore(input){
  const state=normalizeState(input);state.updatedAt=new Date().toISOString();
@@ -47,6 +53,7 @@ export async function clearStore(){
  const state=emptyState();
  if(nativeStorage()){
   await nativeStorage().postMessage({action:'clear'});
+  await nativeStorage().postMessage({action:'save',json:JSON.stringify(state)});
   return state;
  }
  await saveStore(state);

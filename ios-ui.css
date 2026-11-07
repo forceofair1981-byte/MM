@@ -471,3 +471,9 @@ html[data-theme="light"] .exercise-equipment-pill.active small{background:#fffff
 html[data-theme="light"] #page-record .record-text-details{background:#fff;border-color:#d8e1ec}
 html[data-theme="light"] #page-record .record-text-details > summary{color:#075aa9}
 html[data-theme="light"] #page-record .record-text-details > summary::after{color:#0872d2}
+
+/* User ID: compact, readable in both light and dark modes. */
+.user-serial-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--border,#d7dfe9);background:var(--surface,#f5f7fa);max-width:100%;min-width:0;}
+.user-serial-card>div{min-width:0;display:grid;gap:4px;}
+.user-serial-value{font-size:clamp(10px,2.8vw,13px);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all;}
+.user-serial-card button{flex-shrink:0;}
