@@ -21,17 +21,21 @@ function cardioLine(cardio) {
   if (validNumber(cardio.grade)) details.push(`傾斜 ${quantity(cardio.grade,cardio.gradeUnit === 'degrees' ? '度' : '%')}`);
   return `・${cardio.name || '有酸素運動'}${details.length ? '：' + details.join(' / ') : ''}`;
 }
-export function formatTrainingDayText(logs, date) {
+export function formatTrainingDayText(logs, date, dailyTraining={}) {
   const sessions = trainingLogsForDate(logs, date);
   if (!sessions.length) return '';
   const out = [`【トレーニング記録】${date.replaceAll('-','/')}（${sessions.length}セッション）`, ''];
+  const daily=dailyTraining?.[date];
+  const totalMinutes=daily?daily.minutes:sessions.reduce((n,s)=>n+(validNumber(s.minutes)?Number(s.minutes):0),0);
+  const anyMinutes=daily?validNumber(daily.minutes):sessions.some(s=>validNumber(s.minutes));
+  const restMinutes=daily?daily.restMinutes:sessions.find(s=>validNumber(s.restMinutes))?.restMinutes;
+  const dayMeta=[];
+  if(anyMinutes)dayMeta.push(`筋トレ合計 ${quantity(totalMinutes,'分')}`);
+  if(validNumber(restMinutes))dayMeta.push(`セット間休憩 ${quantity(restMinutes,'分/セット')}`);
+  if(dayMeta.length)out.push(dayMeta.join(' / '),'');
   let exerciseCount = 0, setCount = 0, totalWeight = 0;
   sessions.forEach((session, idx) => {
     if (sessions.length > 1) out.push(`■ セッション${idx + 1}`);
-    const meta=[];
-    if (validNumber(session.minutes)) meta.push(`筋トレ ${quantity(session.minutes,'分')}`);
-    if (validNumber(session.restMinutes)) meta.push(`セット間休憩 ${quantity(session.restMinutes,'分')}`);
-    if (meta.length) out.push(meta.join(' / '));
     for (const exercise of (session.exercises || [])) {
       exerciseCount++;
       out.push(`・${exercise.displayName || exercise.name || '未登録種目'}`);

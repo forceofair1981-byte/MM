@@ -326,3 +326,14 @@ html:not([lang="ja"]) .metric small{line-height:1.55;min-height:2.6em}
 @media(max-width:430px){.training-copy-actions label{flex:1 1 100%}.training-copy-actions button{width:100%}}
 html[data-theme="light"] .training-copy-preview{background:#f5f7fb;border-color:#d6e2ed;color:#1d3147}
 html[data-theme="light"] .training-copy-actions label,html[data-theme="light"] .training-copy-status{color:#4b6176}
+
+/* Day-level workout duration & inter-set rest (v3.9.0). */
+.daily-time-panel{border:1px solid var(--line,rgba(128,128,128,.22));background:var(--surface-2,rgba(128,128,128,.06));border-radius:16px;padding:15px;min-width:0}
+.daily-time-heading{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.daily-time-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
+.daily-time-controls label{min-width:0}
+.daily-time-panel .fine{margin:8px 0}
+.daily-time-panel .btn{margin-top:4px}
+.training-day-time-summary{margin:4px 0 12px;padding:12px;border-radius:12px;background:var(--surface-2,rgba(128,128,128,.06));display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.training-day-time-summary .btn{margin-left:auto}
+@media(max-width:420px){.daily-time-controls{grid-template-columns:1fr}}
