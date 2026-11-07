@@ -1,6 +1,6 @@
 {
-  "version": "1.3.5",
-  "webBase": "3.9.1",
+  "version": "1.3.6",
+  "webBase": "3.9.2",
   "platform": "iOS",
-  "build": 8
+  "build": 9
 }

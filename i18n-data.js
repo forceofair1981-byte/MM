@@ -4672,6 +4672,9 @@ L10N["トレーニング一覧をコピーしました"]={"en": "Training list c
 L10N["コピーできませんでした。下のテキストを選択してコピーしてください。"]={"en": "Could not copy. Select the text below and copy it manually.", "fr": "Copie impossible. Sélectionnez le texte ci-dessous pour le copier.", "it": "Impossibile copiare. Seleziona il testo sotto per copiarlo.", "es": "No se pudo copiar. Selecciona el texto de abajo para copiarlo.", "de": "Kopieren fehlgeschlagen. Text unten auswählen und manuell kopieren."};
 L10N["日付を選ぶと、その日の全セッション・種目・重量・回数・セット数・有酸素運動をテキストでまとめます。記録は変更されません。"]={"en": "Select a date to format all sessions, exercises, weights, repetitions, sets, and cardio as text. Your records are unchanged.", "fr": "Choisissez une date pour afficher séances, exercices, poids, répétitions, séries et cardio sous forme de texte. Aucune donnée modifiée.", "it": "Scegli una data per copiare sessioni, esercizi, pesi, ripetizioni, serie e cardio come testo. I dati restano invariati.", "es": "Elige una fecha para copiar sesiones, ejercicios, pesos, repeticiones, series y cardio como texto. No se modifican los datos.", "de": "Datum wählen, um Einheiten, Übungen, Gewichte, Wiederholungen, Sätze und Cardio als Text zu kopieren. Daten bleiben unverändert."};
 
+// v3.9.2: compact daily time card with expandable explanation.
+L10N["入力の説明"]={"en":"How to enter","fr":"Instructions de saisie","it":"Istruzioni di inserimento","es":"Instrucciones de entrada","de":"Eingabehinweise"};
+
 // v3.9.0: one daily strength total and between-set rest for all sessions.
 L10N["日別の共通時間"]={"en": "Daily training times", "fr": "Durées quotidiennes", "it": "Tempi giornalieri", "es": "Tiempos diarios", "de": "Tageszeiten"};
 L10N["1日につき1回"]={"en": "Once per day", "fr": "Une fois par jour", "it": "Una volta al giorno", "es": "Una vez al día", "de": "Einmal pro Tag"};

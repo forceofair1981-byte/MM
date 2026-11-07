@@ -327,13 +327,28 @@ html:not([lang="ja"]) .metric small{line-height:1.55;min-height:2.6em}
 html[data-theme="light"] .training-copy-preview{background:#f5f7fb;border-color:#d6e2ed;color:#1d3147}
 html[data-theme="light"] .training-copy-actions label,html[data-theme="light"] .training-copy-status{color:#4b6176}
 
-/* Day-level workout duration & inter-set rest (v3.9.0). */
-.daily-time-panel{border:1px solid var(--line,rgba(128,128,128,.22));background:var(--surface-2,rgba(128,128,128,.06));border-radius:16px;padding:15px;min-width:0}
-.daily-time-heading{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}
-.daily-time-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
-.daily-time-controls label{min-width:0}
-.daily-time-panel .fine{margin:8px 0}
-.daily-time-panel .btn{margin-top:4px}
+/* v3.9.2: compact, two-column daily time editor matching other record cards. */
+#page-record .form-grid>.daily-time-panel{grid-column:1/-1;min-width:0;align-self:start;margin:0;border:1px solid #36526d;background:#0b1a30;border-radius:14px;padding:13px}
+.daily-time-heading{display:flex;align-items:center;gap:8px;justify-content:space-between;min-width:0}
+.daily-time-heading strong{font-size:13px;line-height:1.4}
+.daily-time-heading .count-chip{font-size:10px;padding:4px 8px}
+.daily-time-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0 10px;align-items:stretch}
+#page-record .daily-time-controls label{min-width:0;display:grid;grid-template-rows:minmax(0,1fr) 44px;align-content:end;gap:5px;font-size:11px;font-weight:700;line-height:1.4}
+#page-record .daily-time-controls input{min-width:0;width:100%;height:44px;padding:9px 10px;font-size:16px;font-variant-numeric:tabular-nums}
+.daily-time-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.daily-time-actions #daily-time-status{flex:1 1 150px;min-width:0;margin:0;color:var(--muted,#a3bdd4);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.daily-time-actions #save-daily-time{flex:0 1 auto;min-height:42px;margin:0;padding:10px 12px;font-size:12px}
+.daily-time-help{margin-top:9px;border-top:1px solid #304860;padding-top:7px}
+.daily-time-help>summary{cursor:pointer;color:#9bbbd4;font-size:11px;line-height:1.6;list-style:disclosure-closed;min-height:24px;touch-action:manipulation}
+.daily-time-help[open]>summary{list-style:disclosure-open}
+.daily-time-help .fine{font-size:11px;line-height:1.6;margin:5px 0 0}
 .training-day-time-summary{margin:4px 0 12px;padding:12px;border-radius:12px;background:var(--surface-2,rgba(128,128,128,.06));display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .training-day-time-summary .btn{margin-left:auto}
-@media(max-width:420px){.daily-time-controls{grid-template-columns:1fr}}
+html[data-theme="light"] #page-record .form-grid>.daily-time-panel{background:#fff;border-color:#d8e1ec}
+html[data-theme="light"] .daily-time-help{border-top-color:#e0e7f0}
+html[data-theme="light"] .daily-time-help>summary{color:#476782}
+@media(max-width:420px){
+  #page-record .form-grid>.daily-time-panel{padding:12px}
+  .daily-time-controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .daily-time-actions #save-daily-time{flex:1 0 100%}
+}
